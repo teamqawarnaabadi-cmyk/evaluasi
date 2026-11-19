@@ -69,7 +69,7 @@
 <!-- ========== APLIKASI ========== -->
 <div id="layarApp" class="wadah" style="display:none">
   <div class="atas">
-    <div><h1>Panel Admin</h1><div class="kecil" id="namaPengguna"></div></div>
+    <div><h1>Panel Admin</h1><div class="kecil"><span id="namaPengguna"></span> <span id="memuat" style="display:none;color:var(--biru)">· memuat data…</span></div></div>
     <div class="nav">
       <button data-h="hBeranda" class="aktif">Beranda & Sesi</button>
       <button data-h="hBuat">Buat Sesi</button>
@@ -166,9 +166,13 @@ let TOKEN = sessionStorage.getItem('adm_token') || '';
 let DATA = { sesi: [], form: null };
 const KODE_JABATAN = { 'SM': 'SM', 'ASM': 'ASM', 'Kasir': 'KSR', 'Shopkeeper': 'SPK' };
 
-function tirai(on) { $('tirai').classList.toggle('aktif', !!on); }
-async function api(aksi, data = {}) {
-  tirai(true);
+let _tirai = 0, _diam = 0;
+function tirai(on) { _tirai += on ? 1 : -1; $('tirai').classList.toggle('aktif', _tirai > 0); }
+function diam(on) { _diam += on ? 1 : -1; $('memuat').style.display = _diam > 0 ? 'inline' : 'none'; }
+// opsi.diam = true → memuat di latar belakang tanpa menutup layar
+async function api(aksi, data = {}, opsi = {}) {
+  const tanda = opsi.diam ? diam : tirai;
+  tanda(true);
   try {
     for (let i = 0; i < 3; i++) {
       try {
@@ -180,7 +184,7 @@ async function api(aksi, data = {}) {
       await new Promise(r => setTimeout(r, 1500 * (i + 1)));
     }
     return { ok: false, pesan: 'Tidak dapat terhubung ke server. Coba lagi.' };
-  } finally { tirai(false); }
+  } finally { tanda(false); }
 }
 
 /* ---------- Login ---------- */
@@ -202,27 +206,35 @@ $('btnKeluar').onclick = () => keluar('');
 async function masukApp() {
   $('layarMasuk').style.display = 'none'; $('layarApp').style.display = 'block';
   $('namaPengguna').textContent = 'Masuk sebagai ' + (sessionStorage.getItem('adm_nama') || '');
-  await muatForm(); await muatSesi();
+  const j = await api('adm_awal');
+  if (!j.ok) { if (!j.keluar) alert(j.pesan); return; }
+  terapkanForm(j.form); DATA.sesi = j.ringkasan.sesi; gambarSesi();
 }
 
 /* ---------- Navigasi ---------- */
 document.querySelectorAll('.nav button[data-h]').forEach(b => b.onclick = () => {
   document.querySelectorAll('.nav button[data-h]').forEach(x => x.classList.toggle('aktif', x === b));
   document.querySelectorAll('.halaman').forEach(h => h.classList.toggle('aktif', h.id === b.dataset.h));
-  if (b.dataset.h === 'hPaket') muatPaket();
-  if (b.dataset.h === 'hBeranda') muatSesi();
+  if (b.dataset.h === 'hPaket') { gambarPaket(); muatPaket(true); }
+  if (b.dataset.h === 'hBeranda') { gambarSesi(); muatSesi(true); }
 });
 
 /* ---------- Data formulir ---------- */
-async function muatForm() {
-  const j = await api('adm_dataForm');
+async function muatForm(latar) {
+  const j = await api('adm_dataForm', {}, { diam: latar });
   if (!j.ok) { if (!j.keluar) alert(j.pesan); return; }
+  terapkanForm(j);
+}
+function terapkanForm(j) {
   DATA.form = j;
+  const tercentang = [...$('bArea').querySelectorAll('input:checked')].map(x => x.value);
+  const jabB = $('bJabatan').value, jabP = $('pJabatan').value;
   const opsiJab = j.jabatan.map(x => `<option>${esc(x.nama)}</option>`).join('');
   $('bJabatan').innerHTML = opsiJab; $('pJabatan').innerHTML = opsiJab;
   $('dlBatch').innerHTML = j.batch.map(b => `<option value="${esc(b)}">`).join('');
-  $('bArea').innerHTML = j.area.length ? j.area.map(a => `<label><input type="checkbox" value="${esc(a)}"> ${esc(a)}</label>`).join('')
+  $('bArea').innerHTML = j.area.length ? j.area.map(a => `<label><input type="checkbox" value="${esc(a)}" ${tercentang.includes(a) ? 'checked' : ''}> ${esc(a)}</label>`).join('')
     : '<div class="kecil">Belum ada area. Isi dulu sheet Toko di Google Sheets.</div>';
+  if (jabB) $('bJabatan').value = jabB; if (jabP) $('pJabatan').value = jabP;
   isiPaketBuat();
 }
 function isiPaketBuat() {
@@ -234,12 +246,12 @@ function isiPaketBuat() {
 $('bJabatan').onchange = isiPaketBuat;
 
 /* ---------- Beranda: daftar sesi ---------- */
-async function muatSesi() {
-  const j = await api('adm_ringkasan');
+async function muatSesi(latar) {
+  const j = await api('adm_ringkasan', {}, { diam: latar });
   if (!j.ok) { if (!j.keluar) alert(j.pesan); return; }
   DATA.sesi = j.sesi; gambarSesi();
 }
-$('btnMuatUlang').onclick = muatSesi;
+$('btnMuatUlang').onclick = () => muatSesi();
 $('saringStatus').onchange = gambarSesi; $('saringCari').oninput = gambarSesi;
 function gambarSesi() {
   const st = $('saringStatus').value, q = $('saringCari').value.trim().toLowerCase();
@@ -380,13 +392,18 @@ async function simpanSesiBaru() {
     <table style="margin-top:8px"><tr><th>ID</th><th>Area</th><th>Kode akses</th></tr>${j.dibuat.map(d => `<tr><td>${esc(d.id)}</td><td>${esc(d.area)}</td><td><b style="font-family:monospace">${esc(d.kode)}</b></td></tr>`).join('')}</table>
     <div class="kecil" style="margin-top:6px">${umum.status === 'Draf' ? 'Sesi masih berstatus Draf. Buka lewat menu Beranda & Sesi saat waktunya tiba.' : 'Sesi sudah dibuka.'}</div></div>`;
   $('bArea').querySelectorAll('input').forEach(x => x.checked = false);
-  await muatForm(); await muatSesi();
+  const j2 = await api('adm_awal', {}, { diam: true });
+  if (j2.ok) { terapkanForm(j2.form); DATA.sesi = j2.ringkasan.sesi; gambarSesi(); }
 }
 
 /* ---------- Paket soal ---------- */
 let SOAL_PAKET = [], PAKET_EDIT = null;
-async function muatPaket() {
-  await muatForm();
+async function muatPaket(latar) {
+  await muatForm(latar);
+  gambarPaket();
+}
+function gambarPaket() {
+  if (!DATA.form) return;
   const p = DATA.form.paket;
   $('tabelPaket').innerHTML = '<tr><th>Nama paket</th><th>Jabatan</th><th>Jumlah soal</th><th>Catatan</th><th></th></tr>' +
     (p.length ? p.map(x => `<tr><td><b>${esc(x.nama)}</b></td><td>${esc(x.jabatan)}</td><td>${x.jumlah}</td><td class="kecil">${esc(x.catatan)}</td>
