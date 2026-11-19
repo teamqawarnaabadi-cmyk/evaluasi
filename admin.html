@@ -83,6 +83,7 @@
       <button data-h="hBuat">Buat Sesi</button>
       <button data-h="hPaket">Paket Soal</button>
       <button data-h="hLaporan">Laporan</button>
+      <button data-h="hKoreksi">Koreksi Kunci</button>
       <button data-h="hPeriksa">Periksa Data</button>
       <button id="btnKeluar" class="bahaya">Keluar</button>
     </div>
@@ -174,6 +175,20 @@
     </div>
   </section>
 
+  <!-- KOREKSI KUNCI -->
+  <section class="halaman" id="hKoreksi">
+    <div class="kartu">
+      <h2>Koreksi kunci jawaban</h2>
+      <p class="kecil">Dipakai bila ternyata ada kunci yang salah setelah sesi berjalan (mis. karena komplain). Setelah disimpan, <b>semua nilai dan status lulus</b> peserta di jabatan + batch ini dihitung ulang otomatis.</p>
+      <div class="grid2">
+        <div><label class="judul">Jabatan</label><select id="kJabatan"></select></div>
+        <div><label class="judul">Batch</label><select id="kBatch"></select></div>
+      </div>
+      <div style="margin-top:12px"><button class="utama" id="btnMuatKoreksi">Tampilkan soal</button> <span class="kecil" id="infoKoreksi"></span></div>
+    </div>
+    <div id="daftarKoreksi"></div>
+  </section>
+
   <!-- PERIKSA DATA -->
   <section class="halaman" id="hPeriksa">
     <div class="kartu">
@@ -247,7 +262,9 @@ $('btnKeluar').onclick = () => keluar('');
 async function masukApp() {
   $('layarMasuk').style.display = 'none'; $('layarApp').style.display = 'block';
   $('namaPengguna').textContent = 'Masuk sebagai ' + (sessionStorage.getItem('adm_nama') || '');
-  const pemantau = sessionStorage.getItem('adm_peran') !== 'Admin Utama';
+  const peran = sessionStorage.getItem('adm_peran');
+  if (!peran) { keluar('Silakan masuk lagi untuk memuat menu terbaru.'); return; }   // sesi login dari versi lama
+  const pemantau = peran !== 'Admin Utama';
   document.querySelectorAll('.nav button[data-h]').forEach(b => b.style.display = pemantau && b.dataset.h !== 'hLaporan' ? 'none' : '');
   if (pemantau) { bukaHalaman('hLaporan'); return; }
   const j = await api('adm_awal');
@@ -263,6 +280,7 @@ function bukaHalaman(id) {
   if (id === 'hBeranda') { gambarSesi(); muatSesi(true); }
   if (id === 'hLaporan') siapkanLaporan();
   if (id === 'hPeriksa') isiPilihanHapus();
+  if (id === 'hKoreksi') siapkanKoreksi();
 }
 document.querySelectorAll('.nav button[data-h]').forEach(b => b.onclick = () => bukaHalaman(b.dataset.h));
 
@@ -777,6 +795,68 @@ $('btnHapusBatch').onclick = async () => {
   $('hKonfirmasi').value = ''; LAPF = null; LAP = null; $('isiLap').style.display = 'none';
   await muatSesi(true); isiPilihanHapus();
 };
+
+/* =================== KOREKSI KUNCI (Langkah 6) =================== */
+let KOR = null;
+function siapkanKoreksi() {
+  const peta = {};
+  (DATA.sesi || []).forEach(s => { (peta[s.jabatan] = peta[s.jabatan] || []); if (!peta[s.jabatan].includes(s.batch)) peta[s.jabatan].push(s.batch); });
+  const lama = $('kJabatan').value;
+  $('kJabatan').innerHTML = Object.keys(peta).sort().map(j => `<option>${esc(j)}</option>`).join('');
+  if (lama && peta[lama]) $('kJabatan').value = lama;
+  const isiB = () => { $('kBatch').innerHTML = (peta[$('kJabatan').value] || []).map(b => `<option>${esc(b)}</option>`).join(''); };
+  $('kJabatan').onchange = isiB; isiB();
+}
+$('btnMuatKoreksi').onclick = async () => {
+  const j = await api('adm_soalKoreksi', { jabatan: $('kJabatan').value, batch: $('kBatch').value });
+  if (!j.ok) { alert(j.pesan); return; }
+  KOR = j; KOR.jabatan = $('kJabatan').value; KOR.batch = $('kBatch').value;
+  $('infoKoreksi').textContent = `${j.soal.length} soal · ${j.jumlahPeserta} peserta · ${j.sesi.length} sesi`;
+  gambarKoreksi();
+};
+function gambarKoreksi() {
+  const n = KOR.jumlahPeserta || 1;
+  $('daftarKoreksi').innerHTML = KOR.soal.map((s, k) => `<div class="kartu" id="kor_${k}">
+      <div class="kepalaKartu"><b>${s.urutan}. ${esc(s.topik || '')}</b><span class="kecil">${esc(s.id)} · ${esc(s.jenis)}</span></div>
+      <div style="margin-bottom:8px">${esc(s.teks)}</div>
+      <table class="kecilTabel" style="table-layout:fixed"><tr><th style="width:56px">Kunci</th><th>Pilihan</th><th style="width:110px">Dipilih</th><th style="width:28%"></th></tr>
+      ${s.pilihan.map(o => { const c = s.sebaran[o.h] || 0; return `<tr><td><input type="checkbox" class="kkCek" data-k="${k}" value="${o.h}" ${s.kunci.includes(o.h) ? 'checked' : ''}></td>
+        <td style="white-space:normal">${o.h}. ${esc(o.t)}</td><td>${c} (${fmt(pct(c, n), 1)}%)</td><td><div class="batang ${s.kunci.includes(o.h) ? '' : 'merah'}" style="width:${pct(c, n)}%"></div></td></tr>`; }).join('')}</table>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select class="kkNilai" data-k="${k}" style="width:auto;max-width:100%"><option value="1" ${s.dinilai ? 'selected' : ''}>Dinilai</option><option value="0" ${s.dinilai ? '' : 'selected'}>Tidak dinilai (dianulir, bobot dibagi ke soal lain)</option></select>
+        <button class="kecil" onclick="semuaBenar(${k})">Anggap semua pilihan benar (dianulir, semua dapat poin)</button>
+        <span class="kecil" id="kor_info_${k}"></span>
+      </div></div>`).join('') + (KOR.soal.length ? `<div class="kartu">
+      <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="kkBank" checked> Terapkan juga ke <b>Bank Soal</b> (untuk sesi berikutnya)</label>
+      <div class="salah" id="salahKoreksi"></div><div class="berhasil" id="okKoreksi"></div>
+      <div style="margin-top:10px"><button class="utama" id="btnSimpanKoreksi">Simpan & hitung ulang nilai</button></div></div>` : '<div class="kartu kecil">Tidak ada soal yang dinilai.</div>');
+  document.querySelectorAll('.kkCek, .kkNilai').forEach(el => el.onchange = () => tandaiKoreksi(+el.dataset.k));
+  if ($('btnSimpanKoreksi')) $('btnSimpanKoreksi').onclick = simpanKoreksi;
+}
+function bacaKoreksi(k) {
+  return { id: KOR.soal[k].id, kunci: [...document.querySelectorAll(`.kkCek[data-k="${k}"]:checked`)].map(c => c.value).sort(),
+           dinilai: document.querySelector(`.kkNilai[data-k="${k}"]`).value === '1' };
+}
+function tandaiKoreksi(k) {
+  const s = KOR.soal[k], b = bacaKoreksi(k);
+  const beda = b.dinilai !== s.dinilai || b.kunci.join(';') !== s.kunci.slice().sort().join(';');
+  $('kor_' + k).style.borderColor = beda ? '#f39c12' : ''; $('kor_' + k).style.borderWidth = beda ? '2px' : '';
+  $('kor_info_' + k).textContent = beda ? 'Diubah: kunci ' + (b.dinilai ? (b.kunci.join(';') || '—') : 'tidak dinilai') : '';
+}
+function semuaBenar(k) { document.querySelectorAll(`.kkCek[data-k="${k}"]`).forEach(c => c.checked = true); document.querySelector(`.kkNilai[data-k="${k}"]`).value = '1'; tandaiKoreksi(k); }
+async function simpanKoreksi() {
+  const ubah = KOR.soal.map((s, k) => ({ s, b: bacaKoreksi(k) }))
+    .filter(x => x.b.dinilai !== x.s.dinilai || x.b.kunci.join(';') !== x.s.kunci.slice().sort().join(';')).map(x => x.b);
+  $('salahKoreksi').textContent = ''; $('okKoreksi').textContent = '';
+  if (!ubah.length) { $('salahKoreksi').textContent = 'Belum ada kunci yang diubah.'; return; }
+  const kosong = ubah.find(u => u.dinilai && !u.kunci.length);
+  if (kosong) { $('salahKoreksi').textContent = 'Soal ' + kosong.id + ': centang minimal satu jawaban benar, atau pilih "Tidak dinilai".'; return; }
+  if (!confirm(`Simpan koreksi ${ubah.length} soal dan hitung ulang nilai ${KOR.jumlahPeserta} peserta?`)) return;
+  const j = await api('adm_simpanKoreksi', { jabatan: KOR.jabatan, batch: KOR.batch, perubahan: ubah, keBank: $('kkBank').checked });
+  if (!j.ok) { $('salahKoreksi').textContent = j.pesan; return; }
+  alert(`Selesai. ${j.peserta} peserta dihitung ulang.\nStatus lulus berubah: ${j.berubah} (menjadi Lulus ${j.jadiLulus}, menjadi Tidak Lulus ${j.jadiTidak}).` + (j.keBank ? `\nBank Soal diperbarui: ${j.keBank} soal.` : ''));
+  LAP = null; $('btnMuatKoreksi').click();
+}
 
 /* ---------- Mulai ---------- */
 if (TOKEN) masukApp();
