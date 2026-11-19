@@ -421,16 +421,17 @@ async function bukaFormPaket(namaLama, jabatan, sumber, catatan, namaBaru) {
   $('judulFormPaket').textContent = namaLama ? 'Ubah paket' : 'Paket baru';
   $('pNama').value = namaBaru || namaLama || ''; $('pJabatan').value = jabatan; $('pCatatan').value = catatan || '';
   $('pJabatan').disabled = !!namaLama; $('salahPaket').textContent = '';
-  await muatSoalPaket(sumber);
+  muatSoalPaket(sumber);
   $('formPaket').scrollIntoView({ behavior: 'smooth' });
 }
 $('pJabatan').onchange = () => muatSoalPaket(null);
-async function muatSoalPaket(sumber) {
-  const j = await api('adm_bankSoal', { jabatan: $('pJabatan').value, paket: sumber });
-  if (!j.ok) { $('salahPaket').textContent = j.pesan; return; }
-  SOAL_PAKET = j.soal;
-  const pilih = j.terpilih || j.soal.map(s => s.id);
-  $('pDaftarSoal').innerHTML = j.soal.length ? j.soal.map(s => `<label class="soal-baris"><input type="checkbox" class="cekSoal" value="${esc(s.id)}" ${pilih.includes(s.id) ? 'checked' : ''}>
+function muatSoalPaket(sumber) {
+  // Data Bank Soal sudah dimuat saat login → paket langsung terbuka tanpa menunggu server
+  const jab = $('pJabatan').value;
+  const soal = (DATA.form.bank || []).filter(s => s.jabatan === jab);
+  const p = sumber ? DATA.form.paket.find(x => x.nama === sumber) : null;
+  const pilih = p ? p.ids : soal.map(s => s.id);
+  $('pDaftarSoal').innerHTML = soal.length ? soal.map(s => `<label class="soal-baris"><input type="checkbox" class="cekSoal" value="${esc(s.id)}" ${pilih.includes(s.id) ? 'checked' : ''}>
       <div><b>${esc(s.id)}</b> <span class="kecil">· ${esc(s.jenis)}${s.topik ? ' · ' + esc(s.topik) : ''}${s.dinilai === 'Tidak' ? ' · tidak dinilai' : ''}</span><div>${esc(s.teks)}</div></div></label>`).join('')
     : '<div class="kecil" style="padding:10px">Belum ada soal bagian Evaluasi untuk jabatan ini di Bank Soal.</div>';
   document.querySelectorAll('.cekSoal').forEach(c => c.onchange = hitungPaket); hitungPaket();
