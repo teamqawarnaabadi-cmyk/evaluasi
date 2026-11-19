@@ -191,10 +191,11 @@
         <div><label class="judul">Nomor urut</label><input type="number" id="fUrutan" min="1" placeholder="otomatis"></div>
         <div><label class="judul">ID Soal</label><input type="text" id="fId" placeholder="otomatis"></div>
       </div>
+      <div class="kecil" id="fKetJenis" style="margin-top:6px;background:var(--biru-muda);border-radius:6px;padding:6px 10px"></div>
       <label class="judul" style="margin-top:10px;display:block">Topik <span class="kecil">(dipakai di laporan per topik)</span></label><input type="text" id="fTopik">
       <label class="judul" style="margin-top:10px;display:block">Pertanyaan</label><textarea id="fTanya" rows="3"></textarea>
       <div id="fBlokPilihan">
-        <label class="judul" style="margin-top:10px;display:block">Pilihan jawaban <span class="kecil" id="fPetunjukKunci">— centang kotak di kiri untuk jawaban yang benar (boleh lebih dari satu)</span></label>
+        <label class="judul" style="margin-top:10px;display:block">Pilihan jawaban <span class="kecil" id="fPetunjukKunci">— centang "benar" pada jawaban yang menjadi kunci</span></label>
         <div id="fPilihan"></div>
         <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap"><button class="kecil" id="fTambahPilihan">+ Tambah pilihan</button><button class="kecil" id="fIsiLikert" style="display:none">Isi pilihan Likert standar</button></div>
       </div>
@@ -916,7 +917,21 @@ const LIKERT_STD = ['Sangat Yakin / Paham', 'Yakin / Paham', 'Kurang Yakin / Pah
 let BS = null;          // { jabatan, soal[], paket[] }
 let BSP = null;         // paket yang sedang diatur: { nama, lama, ids:Set } atau null
 let BSEdit = null;      // ID soal yang sedang diedit (null = soal baru)
-$('fJenis').innerHTML = JENIS.map(j => `<option>${j}</option>`).join('');
+const JENIS_BAGIAN = { Evaluasi: ['Pilihan Ganda', 'Checklist', 'Likert'], Anonim: ['Uraian', 'Ya/Tidak', 'Checklist + Lainnya', 'Checklist', 'Pilihan Ganda'] };
+const KET_JENIS = {
+  'Pilihan Ganda': 'Peserta memilih <b>satu</b> jawaban. Boleh mencentang lebih dari satu kunci bila beberapa jawaban dianggap benar.',
+  'Checklist': 'Peserta boleh memilih <b>lebih dari satu</b> jawaban, maksimal sebanyak jumlah jawaban benar. Benar sebagian = poin sebagian.',
+  'Likert': 'Skala pendapat, <b>tidak dinilai</b>. Selalu tampil di bagian akhir soal evaluasi.',
+  'Uraian': 'Peserta menulis jawaban bebas. Tidak perlu pilihan.',
+  'Ya/Tidak': 'Peserta memilih Ya atau Tidak. Tidak perlu pilihan.',
+  'Checklist + Lainnya': 'Peserta boleh memilih lebih dari satu, plus kotak "Lainnya" untuk menulis sendiri.'
+};
+function isiJenis(bagian, pilih) {
+  const d = JENIS_BAGIAN[bagian] || JENIS_BAGIAN.Evaluasi;
+  $('fJenis').innerHTML = d.map(j => `<option>${j}</option>`).join('');
+  $('fJenis').value = d.includes(pilih) ? pilih : d[0];
+}
+isiJenis('Evaluasi');
 $('bsFJenis').innerHTML = '<option value="">Semua</option>' + JENIS.map(j => `<option>${j}</option>`).join('');
 
 function siapkanBank() {
@@ -1026,7 +1041,7 @@ $('bsHapusPaket').onclick = async () => {
 function barisPilihan(teks, kunci) {
   const d = document.createElement('div');
   d.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:6px';
-  d.innerHTML = `<input type="checkbox" class="fKunci" ${kunci ? 'checked' : ''} title="Jawaban benar"><b class="fHuruf" style="width:18px"></b>
+  d.innerHTML = `<label class="fKunciL" style="display:flex;gap:3px;align-items:center;font-size:12px;color:var(--hijau);width:58px"><input type="checkbox" class="fKunci" ${kunci ? 'checked' : ''}>benar</label><b class="fHuruf" style="width:18px"></b>
     <input type="text" class="fTeks" style="flex:1"><button class="kecil bahaya" title="Hapus pilihan">✕</button>`;
   d.querySelector('.fTeks').value = teks || '';
   if (!teks && BSEdit) d.querySelector('.fTeks').placeholder = 'pilihan ini kosong / belum terekam — isi, atau hapus dengan ✕';
@@ -1037,31 +1052,41 @@ function hurufUlang() {
   [...$('fPilihan').children].forEach((d, i) => d.querySelector('.fHuruf').textContent = HRF[i] + '.');
   $('fTambahPilihan').disabled = $('fPilihan').children.length >= 10;
 }
-$('fTambahPilihan').onclick = () => barisPilihan('', false);
+$('fTambahPilihan').onclick = () => { barisPilihan('', false); aturTampilanForm(); };
 $('fIsiLikert').onclick = () => { $('fPilihan').innerHTML = ''; LIKERT_STD.forEach(t => barisPilihan(t, false)); };
+let _bisaNilaiLalu = null;
 function aturTampilanForm() {
   const jenis = $('fJenis').value, anon = $('fBagian').value === 'Anonim';
   const bisaNilai = !anon && ['Pilihan Ganda', 'Checklist'].includes(jenis);
+  if (bisaNilai && _bisaNilaiLalu === false) $('fDinilai').value = 'Ya';   // pindah dari Likert/Uraian ke soal bernilai
+  _bisaNilaiLalu = bisaNilai;
+  $('fKetJenis').innerHTML = KET_JENIS[jenis] || '';
   const pakaiPilihan = !['Uraian', 'Ya/Tidak'].includes(jenis);
   $('fBlokPilihan').style.display = pakaiPilihan ? '' : 'none';
   $('fBlokNilai').style.display = bisaNilai ? '' : 'none';
   if (!bisaNilai) $('fDinilai').value = 'Tidak';
   const nilai = $('fDinilai').value === 'Ya';
-  document.querySelectorAll('.fKunci').forEach(c => c.style.visibility = nilai ? 'visible' : 'hidden');
+  document.querySelectorAll('.fKunciL').forEach(c => c.style.display = nilai ? 'flex' : 'none');
   $('fPetunjukKunci').style.display = nilai ? '' : 'none';
   $('fIsiLikert').style.display = jenis === 'Likert' ? '' : 'none';
+  const teksNow = [...document.querySelectorAll('.fTeks')].map(x => x.value.trim());
+  const kosongSemua = teksNow.every(t => !t), likertStd = teksNow.join('|') === LIKERT_STD.join('|');
+  if (pakaiPilihan && ((jenis === 'Likert' && kosongSemua) || (jenis !== 'Likert' && likertStd))) $('fPilihan').innerHTML = '';
   if (pakaiPilihan && !$('fPilihan').children.length) {
     if (jenis === 'Likert') LIKERT_STD.forEach(t => barisPilihan(t, false));
     else for (let i = 0; i < 4; i++) barisPilihan('', false);
   }
 }
-['fJenis', 'fBagian', 'fDinilai'].forEach(id => $(id).onchange = aturTampilanForm);
+['fJenis', 'fDinilai'].forEach(id => $(id).onchange = aturTampilanForm);
+$('fBagian').onchange = () => { isiJenis($('fBagian').value, $('fJenis').value); aturTampilanForm(); };
 function bukaFormSoal(id) {
   const s = id ? BS.soal.find(x => x['ID Soal'] === id) : null;
   BSEdit = id || null;
   $('bsJudulForm').textContent = s ? 'Edit soal ' + id : 'Soal baru — ' + BS.jabatan;
   $('fBagian').value = s ? s['Bagian'] : ($('bsFBagian').value || 'Evaluasi');
-  $('fJenis').value = s ? s['Jenis'] : 'Pilihan Ganda';
+  isiJenis($('fBagian').value, s ? s['Jenis'] : 'Pilihan Ganda');
+  if (s && $('fJenis').value !== s['Jenis']) $('fJenis').insertAdjacentHTML('beforeend', `<option>${esc(s['Jenis'])}</option>`), $('fJenis').value = s['Jenis'];
+  _bisaNilaiLalu = null;
   $('fUrutan').value = s ? s['Urutan'] || '' : '';
   $('fId').value = s ? id : ''; $('fId').disabled = !!s;
   $('fTopik').value = s ? s['Topik'] : ''; $('fTanya').value = s ? s['Pertanyaan'] : ''; $('fJelas').value = s ? s['Penjelasan'] : '';
