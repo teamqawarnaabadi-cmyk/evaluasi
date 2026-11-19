@@ -33,6 +33,14 @@
   .grid-nomor button { padding:8px 0; font-size:14px; background:#eef0f3; border-color:#eef0f3; color:#374151; }
   .grid-nomor button.terjawab { background:var(--biru); border-color:var(--biru); color:#fff; }
   .grid-nomor button.ini { outline:3px solid #f39c12; }
+  .ac { position:relative; }
+  .saran { position:absolute; left:0; right:0; top:calc(100% + 4px); background:#fff; border:1px solid var(--garis); border-radius:8px; max-height:260px; overflow-y:auto; z-index:20; display:none; box-shadow:0 6px 16px rgba(0,0,0,.12); }
+  .saran.buka { display:block; }
+  .saran .item { padding:12px 14px; border-bottom:1px solid #eef0f3; cursor:pointer; }
+  .saran .item:last-child { border-bottom:none; }
+  .saran .item:active, .saran .item:hover { background:var(--biru-muda); }
+  .saran .item b { color:var(--biru); margin-right:6px; }
+  .saran .kosong { padding:12px 14px; font-size:14px; color:var(--abu); }
   .tabel-konfirmasi td { padding:6px 4px; vertical-align:top; } .tabel-konfirmasi td:first-child { color:var(--abu); width:40%; }
   .tanpa-salin { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
   #tandaAir { position:fixed; inset:0; pointer-events:none; z-index:50; overflow:hidden; display:none; }
@@ -80,8 +88,10 @@
       <label for="jabatan">Jabatan</label>
       <select id="jabatan"></select>
       <label for="toko">Kode toko</label>
-      <input type="text" id="toko" list="daftarToko" autocomplete="off" placeholder="Ketik kode toko, lalu pilih">
-      <datalist id="daftarToko"></datalist>
+      <div class="ac">
+        <input type="text" id="toko" autocomplete="off" placeholder="Ketik kode atau nama toko, lalu pilih">
+        <div class="saran" id="saranToko"></div>
+      </div>
       <div class="kecil">Bila toko Anda tidak muncul di daftar, ketik kodenya saja (contoh: 17/30). Kasir Keliling: isi toko utama.</div>
       <div class="salah" id="salahToko"></div>
       <label>Status karyawan</label>
@@ -232,7 +242,6 @@ $('kode').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnMasuk'
 /* ================= LAYAR 2 ================= */
 function isiFormIdentitas() {
   $('jabatan').innerHTML = S.sesi.pilihanJabatan.map(j => `<option>${esc(j)}</option>`).join('');
-  $('daftarToko').innerHTML = (S.toko || []).map(t => `<option value="${esc(t.kode + ' — ' + t.nama)}"></option>`).join('');
   const i = S.identitas;
   if (i) {
     $('nama').value = i.nama; $('nip').value = i.nip; $('jabatan').value = i.jabatan; $('toko').value = i.tokoTampil || i.kodeToko;
@@ -245,10 +254,28 @@ $('nip').addEventListener('input', e => {
   if (/\D/.test(e.target.value)) { $('salahNip').textContent = 'NIP hanya boleh berisi angka.'; e.target.value = e.target.value.replace(/\D/g, ''); }
   else $('salahNip').textContent = '';
 });
-$('toko').addEventListener('input', e => {
-  const k = e.target.value.split(' — ')[0].trim();
-  $('salahToko').textContent = /[^\d\/]/.test(k) ? 'Kode toko hanya boleh berisi angka (dan tanda /).' : '';
-});
+function cekToko() {
+  const k = $('toko').value.split(' — ')[0].trim();
+  $('salahToko').textContent = /[^\d\/]/.test(k) && !(S.toko || []).some(t => t.kode + ' — ' + t.nama === $('toko').value.trim())
+    ? 'Kode toko hanya boleh berisi angka (dan tanda /). Pilih dari daftar atau ketik kodenya saja.' : '';
+}
+function tampilSaran() {
+  const q = $('toko').value.trim().toLowerCase();
+  const cocok = (S.toko || []).filter(t => (t.kode + ' ' + t.nama).toLowerCase().includes(q.split(' — ')[0])).slice(0, 50);
+  const kotak = $('saranToko');
+  if (!cocok.length) {
+    kotak.innerHTML = q ? '<div class="kosong">Toko tidak ada di daftar. Kode yang Anda ketik tetap bisa dipakai.</div>' : '';
+  } else {
+    kotak.innerHTML = cocok.map(t => `<div class="item" data-v="${esc(t.kode + ' — ' + t.nama)}"><b>${esc(t.kode)}</b>${esc(t.nama)}</div>`).join('');
+    kotak.querySelectorAll('.item').forEach(el => el.addEventListener('pointerdown', ev => {
+      ev.preventDefault(); $('toko').value = el.dataset.v; kotak.classList.remove('buka'); cekToko(); $('toko').blur();
+    }));
+  }
+  kotak.classList.toggle('buka', !!kotak.innerHTML);
+}
+$('toko').addEventListener('input', () => { tampilSaran(); cekToko(); });
+$('toko').addEventListener('focus', tampilSaran);
+$('toko').addEventListener('blur', () => setTimeout(() => $('saranToko').classList.remove('buka'), 150));
 document.querySelectorAll('input[name=status]').forEach(r => r.addEventListener('change', () => {
   document.querySelectorAll('input[name=status]').forEach(x => x.closest('.opsi').classList.toggle('dipilih', x.checked));
   $('kotakTgl').style.display = r.value === 'Trainee' && r.checked ? 'block' : 'none';
