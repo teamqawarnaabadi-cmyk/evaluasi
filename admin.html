@@ -91,7 +91,7 @@
         </div>
       </div>
       <div class="geser"><table id="tabelSesi"></table></div>
-      <div class="kecil" style="margin-top:8px">Angka peserta: Sedang = sedang mengerjakan atau menunggu kiriman · Selesai · Tidak kirim = waktu habis tanpa kiriman.</div>
+      <div class="kecil" style="margin-top:8px">Angka peserta: Proses = sedang mengerjakan atau menunggu kiriman · Selesai · Tidak kirim = waktu habis tanpa kiriman.</div>
     </div>
     <div id="panelSesi"></div>
   </section>
@@ -122,25 +122,14 @@
   <!-- PAKET SOAL -->
   <section class="halaman" id="hPaket">
     <div class="kartu">
-      <div class="atas" style="margin:0 0 10px"><h2 style="margin:0">Paket soal</h2><button class="utama" id="btnPaketBaru">+ Paket baru</button></div>
+      <h2>Paket soal</h2>
+      <div class="info" style="background:var(--biru-muda);border-radius:8px;padding:12px;font-size:14px;margin-bottom:12px">
+        <b>Paket soal diatur langsung di Google Sheets</b> (file 1_Data_Pengaturan → sheet <b>Bank Soal</b> → kolom <b>Paket</b>).<br>
+        Tulis nama paket pada setiap soal yang ingin dimasukkan, misalnya <code>SM 2027-B1</code>. Satu soal boleh masuk beberapa paket: pisahkan dengan titik koma, misalnya <code>SM 2027-B1; SM 2027-B2</code>.<br>
+        Bila sesi tidak memakai paket, semua soal jabatan tersebut dipakai. Soal bagian anonim selalu ikut otomatis.
+      </div>
       <div class="geser"><table id="tabelPaket"></table></div>
-      <div class="kecil" style="margin-top:8px">Bila sesi tidak memakai paket, semua soal jabatan tersebut di Bank Soal akan dipakai. Soal bagian anonim selalu ikut otomatis.</div>
-    </div>
-    <div class="kartu" id="formPaket" style="display:none">
-      <h2 id="judulFormPaket">Paket baru</h2>
-      <div class="grid2">
-        <div><label class="judul" for="pNama">Nama paket</label><input type="text" id="pNama" placeholder="Contoh: SM 2027 – Batch 1"></div>
-        <div><label class="judul" for="pJabatan">Jabatan</label><select id="pJabatan"></select></div>
-      </div>
-      <label class="judul" for="pCatatan">Catatan (opsional)</label>
-      <input type="text" id="pCatatan">
-      <div class="atas" style="margin:14px 0 6px">
-        <b id="pJumlah">0 soal dipilih</b>
-        <div style="display:flex;gap:6px"><button class="kecil" id="pSemua">Pilih semua</button><button class="kecil" id="pKosong">Kosongkan</button></div>
-      </div>
-      <div id="pDaftarSoal" style="max-height:460px;overflow:auto;border:1px solid var(--garis);border-radius:8px"></div>
-      <div class="salah" id="salahPaket"></div>
-      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end"><button id="pBatal">Batal</button><button class="utama" id="pSimpan">Simpan paket</button></div>
+      <div style="margin-top:10px"><button id="btnMuatPaket">↻ Muat ulang dari Google Sheets</button></div>
     </div>
   </section>
 
@@ -228,13 +217,13 @@ async function muatForm(latar) {
 function terapkanForm(j) {
   DATA.form = j;
   const tercentang = [...$('bArea').querySelectorAll('input:checked')].map(x => x.value);
-  const jabB = $('bJabatan').value, jabP = $('pJabatan').value;
+  const jabB = $('bJabatan').value;
   const opsiJab = j.jabatan.map(x => `<option>${esc(x.nama)}</option>`).join('');
-  $('bJabatan').innerHTML = opsiJab; $('pJabatan').innerHTML = opsiJab;
+  $('bJabatan').innerHTML = opsiJab;
   $('dlBatch').innerHTML = j.batch.map(b => `<option value="${esc(b)}">`).join('');
   $('bArea').innerHTML = j.area.length ? j.area.map(a => `<label><input type="checkbox" value="${esc(a)}" ${tercentang.includes(a) ? 'checked' : ''}> ${esc(a)}</label>`).join('')
     : '<div class="kecil">Belum ada area. Isi dulu sheet Toko di Google Sheets.</div>';
-  if (jabB) $('bJabatan').value = jabB; if (jabP) $('pJabatan').value = jabP;
+  if (jabB) $('bJabatan').value = jabB;
   isiPaketBuat();
 }
 function isiPaketBuat() {
@@ -251,7 +240,7 @@ async function muatSesi(latar) {
   if (!j.ok) { if (!j.keluar) alert(j.pesan); return; }
   DATA.sesi = j.sesi; gambarSesi();
 }
-$('btnMuatUlang').onclick = () => muatSesi();
+$('btnMuatUlang').onclick = () => muatSesi(true);
 $('saringStatus').onchange = gambarSesi; $('saringCari').oninput = gambarSesi;
 function gambarSesi() {
   const st = $('saringStatus').value, q = $('saringCari').value.trim().toLowerCase();
@@ -263,7 +252,7 @@ function gambarSesi() {
       <td><b style="font-family:monospace;font-size:15px">${esc(s.kode)}</b> <button class="kecil" onclick="salin('${esc(s.kode)}')">Salin</button></td>
       <td>${esc(s.tanggal || '—')}<div class="kecil">Tutup ${esc(s.jamTutup || '—')} · ${esc(s.durasi)} mnt${Number(s.tambahan) ? ' · +' + esc(s.tambahan) + ' mnt kirim' : ''}</div></td>
       <td><span class="lencana l-${esc(s.status)}">${esc(s.status)}</span>${s.status === 'Dibuka' && s.pintu ? `<div class="kecil" style="color:var(--merah)">${esc(s.pintu)}</div>` : ''}</td>
-      <td><div class="angka"><span>Sedang <b>${s.hitung.sedang}</b></span><span>Selesai <b>${s.hitung.selesai}</b></span><span>Tidak kirim <b>${s.hitung.tidakKirim}</b></span></div></td>
+      <td><div class="angka"><span>Proses <b>${s.hitung.sedang}</b></span><span>Selesai <b>${s.hitung.selesai}</b></span><span>Tidak kirim <b>${s.hitung.tidakKirim}</b></span></div></td>
       <td style="white-space:nowrap">
         ${s.status !== 'Dibuka' ? `<button class="kecil utama" onclick="ubahStatus('${s.id}','Dibuka')">Buka</button>` : `<button class="kecil bahaya" onclick="ubahStatus('${s.id}','Ditutup')">Tutup</button>`}
         <button class="kecil" onclick="bukaPanel('${s.id}')">Kelola</button>
@@ -272,9 +261,11 @@ function gambarSesi() {
 function salin(t) { navigator.clipboard && navigator.clipboard.writeText(t); }
 async function ubahStatus(id, status) {
   if (status === 'Ditutup' && !confirm('Tutup sesi ini? Peserta yang sedang mengerjakan tetap bisa menyelesaikan waktunya.')) return;
-  const j = await api('adm_ubahSesi', { id, ubah: { status } });
-  if (!j.ok) { alert(j.pesan); return; }
-  await muatSesi(); if ($('panelSesi').dataset.id === id) bukaPanel(id);
+  const s = DATA.sesi.find(x => x.id === id), lama = s.status;
+  s.status = status; s.pintu = ''; gambarSesi();                 // langsung tampil berubah
+  const j = await api('adm_ubahSesi', { id, ubah: { status } }, { diam: true });
+  if (!j.ok) { s.status = lama; gambarSesi(); alert(j.pesan); return; }
+  muatSesi(true);
 }
 
 /* ---------- Panel kelola sesi ---------- */
@@ -308,7 +299,7 @@ async function bukaPanel(id) {
     <div class="geser" id="tabelPeserta"><div class="kecil">Memuat…</div></div>
   </div>`;
   p.scrollIntoView({ behavior: 'smooth' });
-  muatPeserta(id);
+  muatPeserta(id, true);
 }
 function tutupPanel() { $('panelSesi').innerHTML = ''; $('panelSesi').dataset.id = ''; }
 async function simpanEdit(id) {
@@ -318,15 +309,20 @@ async function simpanEdit(id) {
   if (!s.soalTerkunci) ubah.paket = $('ePaket').value;
   $('salahEdit').textContent = ''; $('okEdit').textContent = '';
   if (!ubah.batch) { $('salahEdit').textContent = 'Batch wajib diisi.'; return; }
-  const j = await api('adm_ubahSesi', { id, ubah });
-  if (!j.ok) { $('salahEdit').textContent = j.pesan; return; }
-  await muatSesi(); bukaPanel(id); setTimeout(() => { if ($('okEdit')) $('okEdit').textContent = 'Perubahan tersimpan.'; }, 50);
+  $('okEdit').textContent = 'Menyimpan…';
+  const j = await api('adm_ubahSesi', { id, ubah }, { diam: true });
+  if (!j.ok) { $('okEdit').textContent = ''; $('salahEdit').textContent = j.pesan; return; }
+  Object.assign(s, { batch: ubah.batch, kode: ubah.kode.toUpperCase(), tanggal: ubah.tanggal, jamTutup: ubah.jamTutup, durasi: ubah.durasi, kuota: ubah.kuota });
+  if ('paket' in ubah) s.paket = ubah.paket;
+  gambarSesi(); $('okEdit').textContent = 'Perubahan tersimpan.'; muatSesi(true);
 }
 async function perpanjang(id, menit) {
   if (!confirm('Tambah batas pengiriman ' + menit + ' menit untuk sesi ini?')) return;
-  const j = await api('adm_ubahSesi', { id, ubah: { tambahMenit: menit } });
-  if (!j.ok) { alert(j.pesan); return; }
-  await muatSesi(); bukaPanel(id);
+  $('okEdit').textContent = 'Menyimpan…';
+  const j = await api('adm_ubahSesi', { id, ubah: { tambahMenit: menit } }, { diam: true });
+  if (!j.ok) { $('okEdit').textContent = ''; alert(j.pesan); return; }
+  const s = DATA.sesi.find(x => x.id === id); s.tambahan = (Number(s.tambahan) || 0) + menit;
+  gambarSesi(); $('okEdit').textContent = 'Batas kirim diperpanjang ' + menit + ' menit (total +' + s.tambahan + ' menit).';
 }
 async function resetSoal(id) {
   if (!confirm('Ambil ulang soal dari Bank Soal untuk sesi ini?')) return;
@@ -334,24 +330,25 @@ async function resetSoal(id) {
   alert(j.ok ? 'Soal akan diambil ulang saat peserta pertama menekan Mulai.' : j.pesan);
   await muatSesi(); bukaPanel(id);
 }
-async function muatPeserta(id) {
-  const j = await api('adm_pesertaSesi', { id });
+async function muatPeserta(id, latar) {
+  const j = await api('adm_pesertaSesi', { id }, { diam: latar !== false });
   if (!j.ok) { $('tabelPeserta').innerHTML = `<div class="salah">${esc(j.pesan)}</div>`; return; }
   const kelas = st => st.startsWith('Sedang') ? 'Sedang' : st.startsWith('Mulai') ? 'Tidak' : st.startsWith('Menunggu') ? 'Menunggu' : st;
+  const label = st => st === 'Sedang mengerjakan' ? 'Proses' : st;
   $('tabelPeserta').innerHTML = j.peserta.length ? `<table><tr><th>Nama</th><th>NIP</th><th>Jabatan</th><th>Toko</th><th>Status</th><th>Nilai</th><th>Anonim</th><th></th></tr>` +
     j.peserta.map(p => `<tr>
       <td>${esc(p.nama)}${p.trainee ? ' <span class="kecil">(Trainee)</span>' : ''}</td><td>${esc(p.nip)}</td><td>${esc(p.jabatan)}</td>
       <td>${esc(p.toko)}${p.label && p.label !== 'OK' ? `<div class="kecil" style="color:#8a6100">${esc(p.label)}</div>` : ''}</td>
-      <td><span class="lencana l-${kelas(p.status)}">${esc(p.status)}${p.sisaMenit ? ' · sisa ' + p.sisaMenit + ' mnt' : ''}</span></td>
+      <td><span class="lencana l-${kelas(p.status)}">${esc(label(p.status))}${p.sisaMenit ? ' · sisa ' + p.sisaMenit + ' mnt' : ''}</span></td>
       <td>${p.nilai !== '' ? esc(p.nilai) + `<div class="kecil">${esc(p.lulus)}</div>` : '—'}</td><td>${esc(p.anonim)}</td>
       <td>${p.status !== 'Dibatalkan' ? `<button class="kecil bahaya" onclick="izinkanUlang('${esc(p.id)}','${esc(p.nama)}','${id}')">Izinkan ulang</button>` : ''}</td></tr>`).join('') + '</table>'
     : '<div class="kecil">Belum ada peserta.</div>';
 }
 async function izinkanUlang(idP, nama, idSesi) {
   if (!confirm('Batalkan hasil ' + nama + ' dan izinkan mengerjakan ulang?\nHasil lama tetap tersimpan dengan status "Dibatalkan" dan tidak dihitung di laporan.')) return;
-  const j = await api('adm_izinkanUlang', { idPeserta: idP });
+  const j = await api('adm_izinkanUlang', { idPeserta: idP }, { diam: true });
   if (!j.ok) { alert(j.pesan); return; }
-  muatPeserta(idSesi); muatSesi();
+  muatPeserta(idSesi, true); muatSesi(true);
 }
 
 /* ---------- Buat sesi ---------- */
@@ -396,62 +393,17 @@ async function simpanSesiBaru() {
   if (j2.ok) { terapkanForm(j2.form); DATA.sesi = j2.ringkasan.sesi; gambarSesi(); }
 }
 
-/* ---------- Paket soal ---------- */
-let SOAL_PAKET = [], PAKET_EDIT = null;
-async function muatPaket(latar) {
-  await muatForm(latar);
-  gambarPaket();
-}
+/* ---------- Paket soal (hanya tampilan; diatur di Google Sheets) ---------- */
+async function muatPaket(latar) { await muatForm(latar); gambarPaket(); }
 function gambarPaket() {
   if (!DATA.form) return;
-  const p = DATA.form.paket;
-  $('tabelPaket').innerHTML = '<tr><th>Nama paket</th><th>Jabatan</th><th>Jumlah soal</th><th>Catatan</th><th></th></tr>' +
-    (p.length ? p.map(x => `<tr><td><b>${esc(x.nama)}</b></td><td>${esc(x.jabatan)}</td><td>${x.jumlah}</td><td class="kecil">${esc(x.catatan)}</td>
-      <td style="white-space:nowrap"><button class="kecil" onclick='editPaket(${JSON.stringify(x.nama)})'>Ubah</button>
-      <button class="kecil" onclick='salinPaket(${JSON.stringify(x.nama)})'>Salin</button>
-      <button class="kecil bahaya" onclick='hapusPaket(${JSON.stringify(x.nama)})'>Hapus</button></td></tr>`).join('')
-      : '<tr><td colspan="5" class="kecil">Belum ada paket.</td></tr>');
+  const p = DATA.form.paket, bank = DATA.form.bank || [];
+  $('tabelPaket').innerHTML = '<tr><th>Nama paket</th><th>Jabatan</th><th>Jumlah soal</th><th>Daftar soal</th></tr>' +
+    (p.length ? p.map(x => `<tr><td><b>${esc(x.nama)}</b></td><td>${esc(x.jabatan)}</td><td>${x.jumlah}</td>
+      <td class="kecil">${esc(x.ids.join(', '))}</td></tr>`).join('')
+      : '<tr><td colspan="4" class="kecil">Belum ada paket. Isi kolom Paket di sheet Bank Soal.</td></tr>');
 }
-$('btnPaketBaru').onclick = () => bukaFormPaket(null, $('pJabatan').value, null);
-async function editPaket(nama) { const p = DATA.form.paket.find(x => x.nama === nama); bukaFormPaket(nama, p.jabatan, nama, p.catatan); }
-async function salinPaket(nama) { const p = DATA.form.paket.find(x => x.nama === nama); bukaFormPaket(null, p.jabatan, nama, p.catatan, nama + ' (salinan)'); }
-async function bukaFormPaket(namaLama, jabatan, sumber, catatan, namaBaru) {
-  PAKET_EDIT = namaLama;
-  $('formPaket').style.display = 'block';
-  $('judulFormPaket').textContent = namaLama ? 'Ubah paket' : 'Paket baru';
-  $('pNama').value = namaBaru || namaLama || ''; $('pJabatan').value = jabatan; $('pCatatan').value = catatan || '';
-  $('pJabatan').disabled = !!namaLama; $('salahPaket').textContent = '';
-  muatSoalPaket(sumber);
-  $('formPaket').scrollIntoView({ behavior: 'smooth' });
-}
-$('pJabatan').onchange = () => muatSoalPaket(null);
-function muatSoalPaket(sumber) {
-  // Data Bank Soal sudah dimuat saat login → paket langsung terbuka tanpa menunggu server
-  const jab = $('pJabatan').value;
-  const soal = (DATA.form.bank || []).filter(s => s.jabatan === jab);
-  const p = sumber ? DATA.form.paket.find(x => x.nama === sumber) : null;
-  const pilih = p ? p.ids : soal.map(s => s.id);
-  $('pDaftarSoal').innerHTML = soal.length ? soal.map(s => `<label class="soal-baris"><input type="checkbox" class="cekSoal" value="${esc(s.id)}" ${pilih.includes(s.id) ? 'checked' : ''}>
-      <div><b>${esc(s.id)}</b> <span class="kecil">· ${esc(s.jenis)}${s.topik ? ' · ' + esc(s.topik) : ''}${s.dinilai === 'Tidak' ? ' · tidak dinilai' : ''}</span><div>${esc(s.teks)}</div></div></label>`).join('')
-    : '<div class="kecil" style="padding:10px">Belum ada soal bagian Evaluasi untuk jabatan ini di Bank Soal.</div>';
-  document.querySelectorAll('.cekSoal').forEach(c => c.onchange = hitungPaket); hitungPaket();
-}
-function hitungPaket() { $('pJumlah').textContent = document.querySelectorAll('.cekSoal:checked').length + ' soal dipilih'; }
-$('pSemua').onclick = () => { document.querySelectorAll('.cekSoal').forEach(c => c.checked = true); hitungPaket(); };
-$('pKosong').onclick = () => { document.querySelectorAll('.cekSoal').forEach(c => c.checked = false); hitungPaket(); };
-$('pBatal').onclick = () => { $('formPaket').style.display = 'none'; };
-$('pSimpan').onclick = async () => {
-  const ids = [...document.querySelectorAll('.cekSoal:checked')].map(c => c.value);
-  const j = await api('adm_simpanPaket', { nama: $('pNama').value.trim(), namaLama: PAKET_EDIT, jabatan: $('pJabatan').value, ids, catatan: $('pCatatan').value.trim() });
-  if (!j.ok) { $('salahPaket').textContent = j.pesan; return; }
-  $('formPaket').style.display = 'none'; muatPaket();
-};
-async function hapusPaket(nama) {
-  if (!confirm('Hapus paket "' + nama + '"?')) return;
-  const j = await api('adm_hapusPaket', { nama });
-  if (!j.ok) { alert(j.pesan); return; }
-  muatPaket();
-}
+$('btnMuatPaket').onclick = () => muatPaket(false);
 
 /* ---------- Periksa data ---------- */
 $('btnPeriksa').onclick = async () => {
