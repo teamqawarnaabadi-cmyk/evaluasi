@@ -47,6 +47,14 @@
   .putar { width:34px; height:34px; border:4px solid var(--biru-muda); border-top-color:var(--biru); border-radius:50%; animation:putar 1s linear infinite; }
   @keyframes putar { to { transform:rotate(360deg); } }
   .masuk { max-width:380px; margin:60px auto; }
+  .metrik { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:14px; }
+  .metrik div { background:#eef2f7; border-radius:10px; padding:12px; } .metrik b { display:block; font-size:22px; color:var(--biru); } .metrik span { font-size:13px; color:var(--abu); }
+  .batang { height:14px; background:var(--biru); border-radius:3px; min-width:2px; } .batang.merah { background:var(--merah); }
+  .sel-T { background:#fdecea; color:var(--merah); } .sel-S { background:#fff6db; } .sel-Y { color:var(--hijau); }
+  .kecilTabel td, .kecilTabel th { padding:5px 6px; font-size:13px; white-space:nowrap; }
+  .uraian { max-height:320px; overflow:auto; border:1px solid var(--garis); border-radius:8px; }
+  .uraian div { padding:8px 10px; border-bottom:1px solid #eef0f3; font-size:14px; }
+  .kepalaKartu { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
 </style>
 </head>
 <body>
@@ -74,6 +82,7 @@
       <button data-h="hBeranda" class="aktif">Beranda & Sesi</button>
       <button data-h="hBuat">Buat Sesi</button>
       <button data-h="hPaket">Paket Soal</button>
+      <button data-h="hLaporan">Laporan</button>
       <button data-h="hPeriksa">Periksa Data</button>
       <button id="btnKeluar" class="bahaya">Keluar</button>
     </div>
@@ -133,6 +142,38 @@
     </div>
   </section>
 
+  <!-- LAPORAN -->
+  <section class="halaman" id="hLaporan">
+    <div class="kartu">
+      <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+        <div><label class="judul">Jabatan</label><select id="lJabatan"></select></div>
+        <div><label class="judul">Batch</label><select id="lBatch"></select></div>
+        <div><label class="judul">Area</label><select id="lArea"><option value="">Semua area</option></select></div>
+        <div><label class="judul">Area Manager</label><select id="lAM"><option value="">Semua</option></select></div>
+        <div><label class="judul">Kepala Area</label><select id="lKA"><option value="">Semua</option></select></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="utama" id="btnTampil">Tampilkan laporan</button>
+        <button id="btnExcel" disabled>⬇ Unduh Excel</button>
+        <span class="kecil" id="infoLap" style="align-self:center"></span>
+      </div>
+    </div>
+    <div id="isiLap" style="display:none">
+      <div class="nav" id="subLap" style="margin-bottom:12px">
+        <button data-t="tRingkas" class="aktif">Ringkasan</button>
+        <button data-t="tRapot">Rapot Peserta</button>
+        <button data-t="tAnalisis">Analisis Soal</button>
+        <button data-t="tSuara">Suara Karyawan</button>
+        <button data-t="tPartisipasi">Partisipasi</button>
+      </div>
+      <div class="tabLap" id="tRingkas"></div>
+      <div class="tabLap" id="tRapot" style="display:none"></div>
+      <div class="tabLap" id="tAnalisis" style="display:none"></div>
+      <div class="tabLap" id="tSuara" style="display:none"></div>
+      <div class="tabLap" id="tPartisipasi" style="display:none"></div>
+    </div>
+  </section>
+
   <!-- PERIKSA DATA -->
   <section class="halaman" id="hPeriksa">
     <div class="kartu">
@@ -141,6 +182,17 @@
       <button class="utama" id="btnPeriksa">Periksa sekarang</button>
       <div id="hasilPeriksa" style="margin-top:14px"></div>
     </div>
+    <div class="kartu">
+      <h2>Bersihkan data uji coba</h2>
+      <p class="kecil">Menghapus <b>seluruh</b> data satu batch: sesi, foto soal, peserta, jawaban, dan jawaban anonim. Gunakan untuk data uji coba atau data CONTOH sebelum batch resmi dimulai. <b>Tidak bisa dibatalkan.</b></p>
+      <div class="grid2">
+        <div><label class="judul">Batch</label><select id="hBatch"></select></div>
+        <div><label class="judul">Ketik ulang nama batch untuk konfirmasi</label><input type="text" id="hKonfirmasi"></div>
+      </div>
+      <div class="salah" id="salahHapus"></div><div class="berhasil" id="okHapus"></div>
+      <div style="margin-top:10px"><button class="bahaya" id="btnHapusBatch">Hapus data batch ini</button></div>
+    </div>
+
   </section>
 </div>
 
@@ -181,13 +233,13 @@ $('btnMasuk').onclick = async () => {
   $('salahMasuk').textContent = '';
   const j = await api('login', { username: $('un').value.trim(), sandi: $('pw').value });
   if (!j.ok) { $('salahMasuk').textContent = j.pesan; return; }
-  if (j.pengguna.peran !== 'Admin Utama') { $('salahMasuk').textContent = 'Akun ini bukan Admin Utama.'; return; }
   TOKEN = j.token; sessionStorage.setItem('adm_token', TOKEN); sessionStorage.setItem('adm_nama', j.pengguna.nama || j.pengguna.username);
+  sessionStorage.setItem('adm_peran', j.pengguna.peran);
   masukApp();
 };
 $('pw').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnMasuk').click(); });
 function keluar(pesan) {
-  TOKEN = ''; sessionStorage.removeItem('adm_token');
+  TOKEN = ''; sessionStorage.removeItem('adm_token'); LAPF = null; LAP = null;
   $('layarApp').style.display = 'none'; $('layarMasuk').style.display = 'block';
   $('salahMasuk').textContent = pesan || '';
 }
@@ -195,18 +247,24 @@ $('btnKeluar').onclick = () => keluar('');
 async function masukApp() {
   $('layarMasuk').style.display = 'none'; $('layarApp').style.display = 'block';
   $('namaPengguna').textContent = 'Masuk sebagai ' + (sessionStorage.getItem('adm_nama') || '');
+  const pemantau = sessionStorage.getItem('adm_peran') !== 'Admin Utama';
+  document.querySelectorAll('.nav button[data-h]').forEach(b => b.style.display = pemantau && b.dataset.h !== 'hLaporan' ? 'none' : '');
+  if (pemantau) { bukaHalaman('hLaporan'); return; }
   const j = await api('adm_awal');
   if (!j.ok) { if (!j.keluar) alert(j.pesan); return; }
   terapkanForm(j.form); DATA.sesi = j.ringkasan.sesi; gambarSesi();
 }
 
 /* ---------- Navigasi ---------- */
-document.querySelectorAll('.nav button[data-h]').forEach(b => b.onclick = () => {
-  document.querySelectorAll('.nav button[data-h]').forEach(x => x.classList.toggle('aktif', x === b));
-  document.querySelectorAll('.halaman').forEach(h => h.classList.toggle('aktif', h.id === b.dataset.h));
-  if (b.dataset.h === 'hPaket') { gambarPaket(); muatPaket(true); }
-  if (b.dataset.h === 'hBeranda') { gambarSesi(); muatSesi(true); }
-});
+function bukaHalaman(id) {
+  document.querySelectorAll('.nav button[data-h]').forEach(x => x.classList.toggle('aktif', x.dataset.h === id));
+  document.querySelectorAll('.halaman').forEach(h => h.classList.toggle('aktif', h.id === id));
+  if (id === 'hPaket') { gambarPaket(); muatPaket(true); }
+  if (id === 'hBeranda') { gambarSesi(); muatSesi(true); }
+  if (id === 'hLaporan') siapkanLaporan();
+  if (id === 'hPeriksa') isiPilihanHapus();
+}
+document.querySelectorAll('.nav button[data-h]').forEach(b => b.onclick = () => bukaHalaman(b.dataset.h));
 
 /* ---------- Data formulir ---------- */
 async function muatForm(latar) {
@@ -415,6 +473,309 @@ $('btnPeriksa').onclick = async () => {
   $('hasilPeriksa').innerHTML = `<p><b>${perlu}</b> hal perlu diperbaiki · <b>${saran}</b> saran</p>
     <div class="geser"><table><tr><th>Sheet</th><th>Baris</th><th>Keterangan</th><th>Tingkat</th></tr>${m.map(x => `<tr><td>${esc(x.sheet)}</td><td>${x.baris}</td><td>${esc(x.pesan)}</td>
     <td><span class="lencana ${x.berat === 'Saran' ? 'l-Menunggu' : 'l-Tidak'}">${esc(x.berat)}</span></td></tr>`).join('')}</table></div>`;
+};
+
+/* =================== LAPORAN (Langkah 4) =================== */
+let LAPF = null;   // pilihan filter (batch, toko) dari server
+let LAP = null;    // data laporan jabatan + batch terpilih
+const fmt = (x, d = 2) => x == null || isNaN(x) ? '—' : Number(x).toLocaleString('id-ID', { minimumFractionDigits: d, maximumFractionDigits: d });
+const pct = (a, b) => b ? a / b * 100 : 0;
+const unik = arr => [...new Set(arr.filter(x => x !== '' && x != null))].sort();
+
+async function siapkanLaporan() {
+  if (LAPF) return;
+  const j = await api('adm_dataLaporan', {}, { diam: true });
+  if (!j.ok) { if (!j.keluar) alert(j.pesan); return; }
+  LAPF = j;
+  const jab = Object.keys(j.batch).sort();
+  $('lJabatan').innerHTML = jab.length ? jab.map(x => `<option>${esc(x)}</option>`).join('') : '<option value="">Belum ada sesi</option>';
+  isiBatchLap();
+  $('infoLap').textContent = j.areaBoleh ? 'Akses area: ' + j.areaBoleh.join(', ') : '';
+}
+function isiBatchLap() {
+  const b = (LAPF.batch[$('lJabatan').value] || []).slice().reverse();
+  $('lBatch').innerHTML = b.map(x => `<option>${esc(x)}</option>`).join('');
+}
+$('lJabatan').onchange = isiBatchLap;
+
+$('btnTampil').onclick = async () => {
+  if (!$('lJabatan').value || !$('lBatch').value) return;
+  const j = await api('adm_laporan', { jabatan: $('lJabatan').value, batch: $('lBatch').value });
+  if (!j.ok) { alert(j.pesan); return; }
+  LAP = j; LAP.jabatan = $('lJabatan').value; LAP.batch = $('lBatch').value;
+  isiFilterWilayah();
+  $('isiLap').style.display = 'block'; $('btnExcel').disabled = false;
+  gambarLaporan();
+};
+function isiFilterWilayah() {
+  const p = LAP.peserta;
+  const isi = (id, nilai, label) => { const lama = $(id).value; $(id).innerHTML = `<option value="">${label}</option>` + nilai.map(x => `<option>${esc(x)}</option>`).join(''); if (nilai.includes(lama)) $(id).value = lama; };
+  isi('lArea', unik(p.map(x => x.area)), 'Semua area');
+  isiAMKA();
+}
+function isiAMKA() {
+  if (!LAP) return;
+  const p = LAP.peserta.filter(x => !$('lArea').value || x.area === $('lArea').value);
+  const isi = (id, nilai) => { const lama = $(id).value; $(id).innerHTML = '<option value="">Semua</option>' + nilai.map(x => `<option>${esc(x)}</option>`).join(''); if (nilai.includes(lama)) $(id).value = lama; };
+  isi('lAM', unik(p.map(x => x.am))); isi('lKA', unik(p.map(x => x.ka)));
+}
+['lArea', 'lAM', 'lKA'].forEach(id => $(id).onchange = () => { if (id === 'lArea') isiAMKA(); if (LAP) gambarLaporan(); });
+document.querySelectorAll('#subLap button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#subLap button').forEach(x => x.classList.toggle('aktif', x === b));
+  document.querySelectorAll('.tabLap').forEach(t => t.style.display = t.id === b.dataset.t ? 'block' : 'none');
+});
+
+function saring() {
+  const a = $('lArea').value, m = $('lAM').value, k = $('lKA').value;
+  const p = LAP.peserta.filter(x => (!a || x.area === a) && (!m || x.am === m) && (!k || x.ka === k));
+  const n = LAP.anonim.filter(x => (!a || x.area === a) && (!m || String(x.am).includes(m)));
+  return { p, n, a, m, k };
+}
+// Analisis per soal (dipakai di layar & Excel)
+function hitungAnalisis(p) {
+  return LAP.soal.map((s, i) => {
+    const jawab = p.map(x => String(x.j[i] || ''));
+    const huruf = jawab.map(v => v.split('|')[0]), status = jawab.map(v => v.split('|')[1] || '');
+    const teks = h => h.split(';').map(x => (s.pilihan.find(o => o.h === x) || {}).t || x).join(', ');
+    if (!s.dinilai) {
+      const hit = {}; huruf.forEach(v => { if (v) hit[v] = (hit[v] || 0) + 1; });
+      return { s, i, likert: true, hit, n: huruf.filter(Boolean).length };
+    }
+    const salah = status.filter(x => x !== 'Y').length;
+    const salahJawab = {}; huruf.forEach((v, k) => { if (status[k] !== 'Y') salahJawab[v || '(kosong)'] = (salahJawab[v || '(kosong)'] || 0) + 1; });
+    const top = Object.entries(salahJawab).sort((a, b) => b[1] - a[1])[0];
+    return { s, i, salah, n: p.length, persen: pct(salah, p.length), kunciTeks: teks(s.kunci.join(';')),
+             salahTerbanyak: top ? (top[0] === '(kosong)' ? 'tidak menjawab' : teks(top[0])) : '', salahTerbanyakN: top ? top[1] : 0 };
+  });
+}
+function kalimatKesalahan(a) {
+  const pen = a.s.penjelasan ? a.s.penjelasan.replace(/\.*\s*$/, '.') : `Jawaban yang benar: ${a.kunciTeks}.`;
+  return `${a.s.topik || 'Soal ' + (a.i + 1)} (${fmt(a.persen)}%). ${pen} Sebagian masih menjawab ${String(a.salahTerbanyak).replace(/\.+\s*$/, '')}.`;
+}
+function tombolSalin(id) { return `<button class="kecil" onclick="salinTabel('${id}')">Salin tabel</button>`; }
+function salinTabel(id) {
+  const t = $(id); if (!t) return;
+  const teks = [...t.querySelectorAll('tr')].map(tr => [...tr.children].map(td => td.innerText.replace(/\s+/g, ' ').trim()).join('\t')).join('\n');
+  navigator.clipboard.writeText(teks).then(() => alert('Tabel disalin. Tempel (Ctrl+V) di Excel atau Google Sheets.'));
+}
+
+function gambarLaporan() {
+  const f = saring();
+  $('infoLap').textContent = `${LAP.jabatan} · ${LAP.batch} · ${f.p.length} peserta` + (LAPF.areaBoleh ? ' · akses: ' + LAPF.areaBoleh.join(', ') : '');
+  gambarRingkas(f); gambarRapot(f); gambarAnalisis(f); gambarSuara(f); gambarPartisipasi(f);
+}
+
+/* ---- Tab 1: Ringkasan ---- */
+function gambarRingkas(f) {
+  const p = f.p, nilai = p.map(x => x.nilai).filter(x => x != null);
+  const lulus = p.filter(x => x.lulus === 'Lulus').length, tr = p.filter(x => x.sk === 'Trainee').length;
+  const rata = nilai.length ? nilai.reduce((a, b) => a + b, 0) / nilai.length : null;
+  const rentang = [[0, 60, '< 60'], [60, 70, '60 – 69'], [70, 80, '70 – 79'], [80, 90, '80 – 89'], [90, 101, '90 – 100']]
+    .map(r => ({ label: r[2], n: nilai.filter(v => v >= r[0] && v < r[1]).length }));
+  const maksR = Math.max(1, ...rentang.map(r => r.n));
+  const perArea = unik(p.map(x => x.area)).map(a => { const q = p.filter(x => x.area === a); const v = q.map(x => x.nilai).filter(x => x != null);
+    return { a, n: q.length, rata: v.reduce((s, x) => s + x, 0) / (v.length || 1), lulus: q.filter(x => x.lulus === 'Lulus').length }; })
+    .sort((x, y) => y.rata - x.rata);
+  $('tRingkas').innerHTML = `<div class="kartu">
+    <div class="metrik">
+      <div><span>Peserta</span><b>${p.length}</b><span>${tr} trainee</span></div>
+      <div><span>Nilai rata-rata</span><b>${fmt(rata)}</b><span>batas lulus ${LAP.batasLulus}</span></div>
+      <div><span>Rentang nilai</span><b style="font-size:18px">${nilai.length ? fmt(Math.min(...nilai)) + ' – ' + fmt(Math.max(...nilai)) : '—'}</b></div>
+      <div><span>Lulus</span><b>${lulus}</b><span>${fmt(pct(lulus, p.length))}%</span></div>
+      <div><span>Tidak lulus</span><b>${p.length - lulus}</b><span>${fmt(pct(p.length - lulus, p.length))}%</span></div>
+    </div>
+    ${p.length ? '' : '<p class="kecil">Belum ada peserta untuk pilihan ini.</p>'}
+    <div class="kepalaKartu"><h3 style="margin:0">Sebaran nilai</h3>${tombolSalin('tbSebaran')}</div>
+    <table id="tbSebaran"><tr><th>Rentang nilai</th><th>Jumlah</th><th style="width:50%"></th></tr>
+      ${rentang.map(r => `<tr><td>${r.label}</td><td>${r.n}</td><td><div class="batang ${r.label === '90 – 100' ? '' : 'merah'}" style="width:${r.n / maksR * 100}%"></div></td></tr>`).join('')}</table>
+    <div class="kepalaKartu" style="margin-top:16px"><h3 style="margin:0">Per area</h3>${tombolSalin('tbArea')}</div>
+    <div class="geser"><table id="tbArea"><tr><th>Area</th><th>Peserta</th><th>Rata-rata</th><th>Lulus</th><th>% Lulus</th><th style="width:35%"></th></tr>
+      ${perArea.map(r => `<tr><td>${esc(r.a)}</td><td>${r.n}</td><td>${fmt(r.rata)}</td><td>${r.lulus}</td><td>${fmt(pct(r.lulus, r.n))}%</td><td><div class="batang" style="width:${pct(r.lulus, r.n)}%"></div></td></tr>`).join('')}</table></div>
+  </div>`;
+}
+
+/* ---- Tab 2: Rapot (seperti Responses Google Forms) ---- */
+function gambarRapot(f) {
+  const q = ($('cariRapot') && $('cariRapot').value || '').toLowerCase();
+  const p = f.p.filter(x => !q || (x.nama + ' ' + x.nip + ' ' + x.toko).toLowerCase().includes(q)).sort((a, b) => (b.nilai || 0) - (a.nilai || 0));
+  const kepala = LAP.soal.map((s, i) => `<th title="${esc(s.teks)}">${i + 1}</th>`).join('');
+  const baris = p.map((x, n) => `<tr><td>${n + 1}</td><td><a href="#" onclick="detailPeserta('${esc(x.id)}');return false">${esc(x.nama)}</a></td><td>${esc(x.nip)}</td><td>${esc(x.jab)}</td>
+    <td>${esc(x.toko)}</td><td>${esc(x.area)}</td><td>${esc(x.am)}</td><td>${esc(x.tgl)}</td><td><b>${fmt(x.nilai)}</b></td><td>${esc(x.lulus)}</td>
+    <td>${x.sk === 'Trainee' ? 'Trainee' + (x.tm ? ' / ' + esc(x.tm) : '') : ''}</td>
+    ${x.j.map(v => { const [h, b] = String(v).split('|'); return `<td class="sel-${b || ''}">${esc(h)}</td>`; }).join('')}</tr>`).join('');
+  $('tRapot').innerHTML = `<div class="kartu">
+    <div class="kepalaKartu"><input type="text" id="cariRapot" placeholder="Cari nama / NIP / toko" style="max-width:280px" value="${esc(q)}">
+      <span class="kecil">Klik nama untuk detail & riwayat. Merah = salah, kuning = benar sebagian.</span>${tombolSalin('tbRapot')}</div>
+    <div class="geser" style="max-height:560px;overflow:auto"><table id="tbRapot" class="kecilTabel">
+      <tr><th>No</th><th>Nama</th><th>NIP</th><th>Jabatan</th><th>Toko</th><th>Area</th><th>Area Manager</th><th>Tanggal</th><th>Nilai</th><th>Hasil</th><th>Status</th>${kepala}</tr>${baris}</table></div>
+    <div id="detailPeserta"></div></div>`;
+  $('cariRapot').oninput = () => { const pos = $('cariRapot').selectionStart; gambarRapot(saring()); $('cariRapot').focus(); $('cariRapot').setSelectionRange(pos, pos); };
+}
+async function detailPeserta(id) {
+  const x = LAP.peserta.find(p => p.id === id); if (!x) return;
+  const kotak = $('detailPeserta');
+  kotak.innerHTML = `<div class="panel"><b>${esc(x.nama)}</b> · NIP ${esc(x.nip)} · ${esc(x.toko)} · ${esc(x.area)} · nilai <b>${fmt(x.nilai)}</b> (${esc(x.lulus)})
+    <h3>Riwayat nilai</h3><div id="riwayatIsi" class="kecil">Memuat…</div>
+    <h3>Jawaban per soal</h3><div class="geser"><table class="kecilTabel"><tr><th>No</th><th>Topik</th><th>Jawaban</th><th>Kunci</th><th></th></tr>
+    ${LAP.soal.map((s, i) => { const [h, b] = String(x.j[i] || '').split('|'); const t = v => v.split(';').map(k => (s.pilihan.find(o => o.h === k) || {}).t || k).join(', ');
+      return `<tr><td>${i + 1}</td><td>${esc(s.topik)}</td><td class="sel-${b || ''}" style="white-space:normal">${esc(h ? h + '. ' + t(h) : '—')}</td><td style="white-space:normal">${s.dinilai ? esc(s.kunci.join(';') + '. ' + t(s.kunci.join(';'))) : '—'}</td><td>${b === 'Y' ? '✓' : b === 'S' ? '½' : b === 'T' ? '✗' : ''}</td></tr>`; }).join('')}
+    </table></div></div>`;
+  kotak.scrollIntoView({ behavior: 'smooth' });
+  const j = await api('adm_riwayat', { nip: x.nip }, { diam: true });
+  if ($('riwayatIsi')) $('riwayatIsi').innerHTML = j.ok && j.riwayat.length ? `<table class="kecilTabel"><tr><th>Batch</th><th>Jabatan</th><th>Tanggal</th><th>Toko</th><th>Nilai</th><th>Hasil</th></tr>
+    ${j.riwayat.map(r => `<tr><td>${esc(r.batch)}</td><td>${esc(r.jab)}</td><td>${esc(r.tgl)}</td><td>${esc(r.toko)}</td><td>${fmt(r.nilai)}</td><td>${esc(r.lulus)}</td></tr>`).join('')}</table>` : 'Belum ada riwayat lain.';
+}
+
+/* ---- Tab 3: Analisis soal ---- */
+function gambarAnalisis(f) {
+  const an = hitungAnalisis(f.p), dn = an.filter(a => !a.likert), lk = an.filter(a => a.likert);
+  const top5 = dn.slice().sort((a, b) => b.persen - a.persen).slice(0, 5);
+  const topik = {}; dn.forEach(a => { const k = a.s.topik || '(tanpa topik)'; (topik[k] = topik[k] || { s: 0, n: 0 }); topik[k].s += a.salah; topik[k].n += a.n; });
+  const topikArr = Object.entries(topik).map(([k, v]) => ({ k, p: pct(v.s, v.n) })).sort((a, b) => b.p - a.p);
+  const skala = unik(lk.flatMap(a => a.s.pilihan.map(o => o.h)));
+  $('tAnalisis').innerHTML = `<div class="kartu"><div class="kepalaKartu"><h3 style="margin:0">Top 5 kesalahan</h3></div>
+      ${top5.length ? '<ol>' + top5.map(a => `<li style="margin-bottom:8px">${esc(kalimatKesalahan(a))}</li>`).join('') + '</ol>' : '<p class="kecil">Belum ada data.</p>'}
+    </div>
+    <div class="kartu"><div class="kepalaKartu"><h3 style="margin:0">Persentase salah per soal</h3>${tombolSalin('tbSoal')}</div>
+      <div class="geser"><table id="tbSoal" class="kecilTabel"><tr><th>No</th><th>Topik</th><th>% Salah</th><th style="width:18%"></th><th>Jawaban benar</th><th>Jawaban salah terbanyak</th></tr>
+      ${dn.map(a => `<tr><td>${a.i + 1}</td><td style="white-space:normal">${esc(a.s.topik || '—')}</td><td>${fmt(a.persen)}%</td><td><div class="batang merah" style="width:${a.persen}%"></div></td>
+        <td style="white-space:normal">${esc(a.kunciTeks)}</td><td style="white-space:normal">${esc(a.salahTerbanyak)} ${a.salahTerbanyakN ? '(' + a.salahTerbanyakN + ')' : ''}</td></tr>`).join('')}</table></div></div>
+    <div class="kartu"><div class="kepalaKartu"><h3 style="margin:0">Persentase salah per topik</h3>${tombolSalin('tbTopik')}</div>
+      <table id="tbTopik" class="kecilTabel"><tr><th>Topik</th><th>% Salah</th><th style="width:40%"></th></tr>
+      ${topikArr.map(t => `<tr><td style="white-space:normal">${esc(t.k)}</td><td>${fmt(t.p)}%</td><td><div class="batang merah" style="width:${t.p}%"></div></td></tr>`).join('')}</table></div>
+    ${lk.length ? `<div class="kartu"><div class="kepalaKartu"><h3 style="margin:0">Rekap skala Likert</h3>${tombolSalin('tbLikert')}</div>
+      <div class="geser"><table id="tbLikert" class="kecilTabel"><tr><th>No</th><th>Pernyataan</th>${skala.map(h => `<th>${esc((lk[0].s.pilihan.find(o => o.h === h) || {}).t || h)}</th>`).join('')}</tr>
+      ${lk.map(a => `<tr><td>${a.i + 1}</td><td style="white-space:normal;min-width:260px">${esc(a.s.teks)}</td>${skala.map(h => `<td>${fmt(pct(a.hit[h] || 0, a.n), 1)}%</td>`).join('')}</tr>`).join('')}</table></div></div>` : ''}`;
+}
+
+/* ---- Tab 4: Suara karyawan (anonim) ---- */
+function pecahChecklist(v) {
+  const s = String(v || ''); const i = s.indexOf('Lainnya:');
+  const utama = (i >= 0 ? s.slice(0, i) : s).split(/,\s*/).map(x => x.trim()).filter(Boolean);
+  return { utama, lain: i >= 0 ? s.slice(i + 8).trim() : '' };
+}
+function hitungSuara(n) {
+  return LAP.soalAnonim.map(s => {
+    const jw = n.map(r => r.j[s.id]).filter(v => v != null && String(v).trim() !== '');
+    if (s.jenis === 'Ya/Tidak') { const ya = jw.filter(v => String(v).trim().toLowerCase() === 'ya').length; return { s, jenis: 'yt', ya, tidak: jw.length - ya, n: jw.length }; }
+    if (s.jenis.startsWith('Checklist')) {
+      const hit = {}, lain = [];
+      jw.forEach(v => { const p = pecahChecklist(v); p.utama.forEach(o => { if (s.pilihan.includes(o)) hit[o] = (hit[o] || 0) + 1; else lain.push(o); }); if (p.lain) lain.push(p.lain); });
+      return { s, jenis: 'cl', hit: Object.entries(hit).sort((a, b) => b[1] - a[1]), lain, n: jw.length };
+    }
+    return { s, jenis: 'ur', isi: n.filter(r => r.j[s.id]).map(r => ({ t: r.j[s.id], area: r.area })), n: jw.length };
+  });
+}
+function gambarSuara(f) {
+  if (!LAP.soalAnonim.length) { $('tSuara').innerHTML = '<div class="kartu kecil">Jabatan ini tidak mengisi bagian anonim.</div>'; return; }
+  const batasOn = !$('cekMin5') || $('cekMin5').checked;
+  const catat = (LAP.catatan || []).find(c => c.area === f.a && c.am === f.m) || {};
+  const admin = sessionStorage.getItem('adm_peran') === 'Admin Utama';
+  let isi;
+  if (batasOn && f.n.length < 5) isi = `<div class="kartu kecil">Jawaban untuk pilihan ini baru ${f.n.length}. Ditampilkan bila minimal 5 jawaban, agar penulisnya tidak mudah ditebak.</div>`;
+  else isi = hitungSuara(f.n).map((h, k) => {
+    let badan = '';
+    if (h.jenis === 'yt') badan = `<table class="kecilTabel" id="tbS${k}"><tr><th>Jawaban</th><th>Jumlah</th><th>%</th></tr><tr><td>Ya</td><td>${h.ya}</td><td>${fmt(pct(h.ya, h.n))}%</td></tr><tr><td>Tidak</td><td>${h.tidak}</td><td>${fmt(pct(h.tidak, h.n))}%</td></tr></table>`;
+    else if (h.jenis === 'cl') badan = `<table class="kecilTabel" id="tbS${k}"><tr><th>Kendala</th><th>Jumlah</th><th>% responden</th><th style="width:30%"></th></tr>
+        ${h.hit.map(([o, c]) => `<tr><td style="white-space:normal">${esc(o)}</td><td>${c}</td><td>${fmt(pct(c, h.n))}%</td><td><div class="batang" style="width:${pct(c, h.n)}%"></div></td></tr>`).join('')}</table>
+        ${h.lain.length ? `<h3>Lainnya (${h.lain.length})</h3><div class="uraian">${h.lain.map(t => `<div>${esc(t)}</div>`).join('')}</div>` : ''}`;
+    else badan = `<div class="uraian" id="tbS${k}">${h.isi.map(x => `<div>${esc(x.t)} <span class="kecil">· ${esc(x.area)}</span></div>`).join('')}</div>`;
+    return `<div class="kartu"><div class="kepalaKartu"><h3 style="margin:0">${k + 1}. ${esc(h.s.teks)}</h3><span class="kecil">${h.n} jawaban</span>${h.jenis !== 'ur' ? tombolSalin('tbS' + k) : ''}</div>${badan}</div>`;
+  }).join('');
+  $('tSuara').innerHTML = `<div class="kartu"><div class="kepalaKartu"><b>${f.n.length} responden anonim</b>
+      ${admin ? `<label class="kecil"><input type="checkbox" id="cekMin5" ${batasOn ? 'checked' : ''}> Tampilkan hanya bila minimal 5 jawaban</label>` : ''}</div>
+      <div class="kecil">Saringan per Area Manager memakai Area Manager toko responden.</div></div>
+    ${isi}
+    <div class="kartu"><h3 style="margin-top:0">Hasil Temuan & Rekomendasi</h3>
+      <div class="kecil">Untuk: ${esc(LAP.jabatan)} · ${esc(LAP.batch)} · ${esc(f.a || 'Semua area')}${f.m ? ' · ' + esc(f.m) : ''}. Ikut tercetak di file Excel.</div>
+      <label class="judul">Hasil Temuan</label><textarea id="txtTemuan" rows="6" ${admin ? '' : 'readonly'}>${esc(catat.temuan || '')}</textarea>
+      <label class="judul">Rekomendasi</label><textarea id="txtRekom" rows="6" ${admin ? '' : 'readonly'}>${esc(catat.rekomendasi || '')}</textarea>
+      ${admin ? '<div style="margin-top:10px"><button class="utama" id="btnSimpanCatatan">Simpan catatan</button> <span class="berhasil" id="okCatatan"></span></div>' : ''}</div>`;
+  if ($('cekMin5')) $('cekMin5').onchange = () => gambarSuara(saring());
+  if ($('btnSimpanCatatan')) $('btnSimpanCatatan').onclick = async () => {
+    $('okCatatan').textContent = 'Menyimpan…';
+    const d = { batch: LAP.batch, jabatan: LAP.jabatan, area: f.a, am: f.m, temuan: $('txtTemuan').value, rekomendasi: $('txtRekom').value };
+    const j = await api('adm_simpanCatatan', d, { diam: true });
+    if (!j.ok) { $('okCatatan').textContent = ''; alert(j.pesan); return; }
+    LAP.catatan = (LAP.catatan || []).filter(c => !(c.area === f.a && c.am === f.m)).concat([{ area: f.a, am: f.m, temuan: d.temuan, rekomendasi: d.rekomendasi }]);
+    $('okCatatan').textContent = 'Tersimpan.';
+  };
+}
+
+/* ---- Tab 5: Partisipasi ---- */
+function gambarPartisipasi(f) {
+  const toko = (LAPF.toko || []).filter(t => (!f.a || t.area === f.a) && (!f.m || t.am === f.m) && (!f.k || t.ka === f.k));
+  const hit = {}; f.p.forEach(x => { const k = String(x.toko).replace(/^0+(?=\d)/, ''); hit[k] = (hit[k] || 0) + 1; });
+  const norm = k => String(k).replace(/^0+(?=\d)/, '');
+  const kosong = toko.filter(t => !hit[norm(t.kode)]);
+  const perArea = unik(toko.map(t => t.area)).map(a => { const tt = toko.filter(t => t.area === a);
+    return { a, toko: tt.length, ikut: tt.filter(t => hit[norm(t.kode)]).length, peserta: f.p.filter(x => x.area === a).length }; });
+  const aneh = f.p.filter(x => x.label && x.label !== 'OK' && x.label !== 'Contoh');
+  $('tPartisipasi').innerHTML = `<div class="kartu"><div class="kepalaKartu"><h3 style="margin:0">Per area</h3>${tombolSalin('tbPA')}</div>
+      <table id="tbPA" class="kecilTabel"><tr><th>Area</th><th>Toko terdaftar</th><th>Toko ikut</th><th>Peserta</th><th>% toko ikut</th></tr>
+      ${perArea.map(r => `<tr><td>${esc(r.a)}</td><td>${r.toko}</td><td>${r.ikut}</td><td>${r.peserta}</td><td>${fmt(pct(r.ikut, r.toko), 1)}%</td></tr>`).join('')}</table></div>
+    <div class="kartu"><div class="kepalaKartu"><h3 style="margin:0">Toko tanpa peserta (${kosong.length})</h3>${tombolSalin('tbKosong')}</div>
+      <div class="geser" style="max-height:360px;overflow:auto"><table id="tbKosong" class="kecilTabel"><tr><th>Kode</th><th>Nama toko</th><th>Area</th><th>Area Manager</th></tr>
+      ${kosong.map(t => `<tr><td>${esc(t.kode)}</td><td>${esc(t.nama)}</td><td>${esc(t.area)}</td><td>${esc(t.am)}</td></tr>`).join('')}</table></div></div>
+    <div class="kartu"><div class="kepalaKartu"><h3 style="margin:0">Peserta nyasar / toko belum terdaftar (${aneh.length})</h3>${tombolSalin('tbAneh')}</div>
+      <div class="geser"><table id="tbAneh" class="kecilTabel"><tr><th>Nama</th><th>NIP</th><th>Kode toko</th><th>Keterangan</th></tr>
+      ${aneh.map(x => `<tr><td>${esc(x.nama)}</td><td>${esc(x.nip)}</td><td>${esc(x.toko)}</td><td>${esc(x.label)}</td></tr>`).join('')}</table></div></div>`;
+}
+
+/* ---- Unduh Excel ---- */
+function muatSkrip(src) { return new Promise((ok, gagal) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = gagal; document.head.appendChild(s); }); }
+$('btnExcel').onclick = async () => {
+  if (!window.XLSX) { try { tirai(true); await muatSkrip('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); } catch (e) { alert('Gagal memuat alat Excel. Periksa internet lalu coba lagi.'); return; } finally { tirai(false); } }
+  const f = saring(), p = f.p, an = hitungAnalisis(p), dn = an.filter(a => !a.likert);
+  const nilai = p.map(x => x.nilai).filter(x => x != null), lulus = p.filter(x => x.lulus === 'Lulus').length;
+  const catat = (LAP.catatan || []).find(c => c.area === f.a && c.am === f.m) || {};
+  const ams = unik(p.flatMap(x => String(x.am || '').split(/,\s*/))).join(', ');
+  const persen = [['Hasil Evaluasi ' + LAP.jabatan], ['Area Manager :', f.m || ams], ['Area : ' + (f.a || 'Semua Area')], ['Pelaksanaan ' + LAP.batch], [],
+    ['Nilai Rata-rata', nilai.length ? +(nilai.reduce((a, b) => a + b, 0) / nilai.length).toFixed(2) : ''],
+    ['Range', nilai.length ? `${fmt(Math.min(...nilai))} - ${fmt(Math.max(...nilai))}` : ''],
+    ['Partisipan', `${p.length} ${LAP.jabatan}`], ['Trainee', p.filter(x => x.sk === 'Trainee').length],
+    ['Lulus', lulus, +(pct(lulus, p.length)).toFixed(2) + '%'], ['Tidak Lulus', p.length - lulus, +(pct(p.length - lulus, p.length)).toFixed(2) + '%'], [],
+    ['Topik', 'Persentase salah'], ...dn.slice().sort((a, b) => b.persen - a.persen).slice(0, 10).map(a => [a.s.topik || 'Soal ' + (a.i + 1), +a.persen.toFixed(2) + '%']),
+    ['*Data ini menampilkan persentase peserta salah menjawab pertanyaan.'], [], ['Hasil Temuan'], [catat.temuan || '']];
+  if (LAP.soalAnonim.length && f.n.length) {
+    const kend = hitungSuara(f.n).find(h => h.jenis === 'cl');
+    if (kend) { persen.push([], ['Kendala']); kend.hit.forEach(([o, c], i) => persen.push([`${String.fromCharCode(97 + i)}. ${o} (${fmt(pct(c, kend.n))}%)`])); }
+  }
+  persen.push([], ['Rekomendasi'], [catat.rekomendasi || ''], [], ['Top 5 Kesalahan Yang Sering Muncul'],
+    ...dn.slice().sort((a, b) => b.persen - a.persen).slice(0, 5).map(a => [kalimatKesalahan(a)]));
+  const rapot = [['Nama', 'NIP', 'Jabatan', 'Outlet/Cabang', 'Area', 'Area Manager', 'Tanggal Uji', 'Score', 'Hasil Kelulusan', 'Status / Tgl Masuk'],
+    ...p.slice().sort((a, b) => (b.nilai || 0) - (a.nilai || 0)).map(x => [x.nama, x.nip, x.jab, x.toko, x.area, x.am, x.tgl, x.nilai, x.lulus, x.sk === 'Trainee' ? 'Trainee / ' + (x.tm || '') : ''])];
+  const resp = [['Tanggal', 'Nama', 'NIP', 'Jabatan', 'Outlet/Cabang', 'Area', ...LAP.soal.map((s, i) => `${i + 1}. ${s.teks}`), 'Nilai', 'Hasil'],
+    ...p.map(x => [x.tgl, x.nama, x.nip, x.jab, x.toko, x.area, ...x.j.map((v, i) => { const h = String(v).split('|')[0]; const s = LAP.soal[i];
+      return h ? h.split(';').map(k => k + '. ' + ((s.pilihan.find(o => o.h === k) || {}).t || '')).join(', ') : ''; }), x.nilai, x.lulus])];
+  const analisis = [['No', 'Topik', 'Pertanyaan', '% Salah', 'Jawaban benar', 'Jawaban salah terbanyak', 'Penjelasan'],
+    ...dn.map(a => [a.i + 1, a.s.topik, a.s.teks, +a.persen.toFixed(2), a.kunciTeks, a.salahTerbanyak, a.s.penjelasan])];
+  const wb = XLSX.utils.book_new();
+  const tambah = (nama, data, lebar) => { const ws = XLSX.utils.aoa_to_sheet(data); if (lebar) ws['!cols'] = lebar.map(w => ({ wch: w })); XLSX.utils.book_append_sheet(wb, ws, nama); };
+  tambah('Persentase', persen, [60, 40, 14]); tambah('Rapot', rapot, [28, 10, 14, 12, 14, 28, 12, 8, 14, 22]);
+  tambah('Responses', resp); tambah('Analisis Soal', analisis, [5, 30, 60, 9, 40, 40, 60]);
+  if (LAP.soalAnonim.length && (f.n.length >= 5 || !$('cekMin5') || !$('cekMin5').checked))
+    tambah('Suara Karyawan', [['Area', 'Area Manager', ...LAP.soalAnonim.map(s => s.teks)], ...f.n.map(r => [r.area, r.am, ...LAP.soalAnonim.map(s => r.j[s.id] || '')])]);
+  const nama = ['Laporan', LAP.jabatan, LAP.batch, f.a || 'Semua Area', f.m].filter(Boolean).join('_').replace(/[\\/:*?"<>|]/g, '-');
+  XLSX.writeFile(wb, nama + '.xlsx');
+};
+
+/* ---- Hapus data satu batch ---- */
+function isiPilihanHapus() {
+  const b = unik((DATA.sesi || []).map(s => s.batch));
+  $('hBatch').innerHTML = '<option value="">— pilih batch —</option>' + b.map(x => `<option>${esc(x)}</option>`).join('');
+}
+$('btnHapusBatch').onclick = async () => {
+  const b = $('hBatch').value; $('salahHapus').textContent = ''; $('okHapus').textContent = '';
+  if (!b) { $('salahHapus').textContent = 'Pilih batch dulu.'; return; }
+  if ($('hKonfirmasi').value.trim() !== b) { $('salahHapus').textContent = 'Ketik ulang nama batch persis sama untuk konfirmasi.'; return; }
+  if (!confirm('Hapus SEMUA data batch "' + b + '"? Tindakan ini tidak bisa dibatalkan.')) return;
+  const j = await api('adm_hapusBatch', { batch: b });
+  if (!j.ok) { $('salahHapus').textContent = j.pesan; return; }
+  const h = j.hasil;
+  $('okHapus').textContent = `Terhapus: ${h.sesi} sesi, ${h.peserta} peserta, ${h.jawaban} jawaban, ${h.anonim} jawaban anonim.`;
+  $('hKonfirmasi').value = ''; LAPF = null; LAP = null; $('isiLap').style.display = 'none';
+  await muatSesi(true); isiPilihanHapus();
 };
 
 /* ---------- Mulai ---------- */
