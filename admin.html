@@ -150,7 +150,7 @@
         <div><label class="judul" for="bKuota">Kuota peserta</label><input type="number" id="bKuota" min="1" value="500"></div>
         <div><label class="judul" for="bStatus">Status awal</label><select id="bStatus"><option>Draf</option><option>Dibuka</option></select></div>
       </div>
-      <label class="judul">Area <button class="kecil" id="btnSemuaArea" type="button" style="margin-left:8px">Pilih semua</button></label>
+      <div style="display:flex;align-items:center;gap:8px;margin:12px 0 6px"><span style="font-weight:600;font-size:14px">Area</span><button class="kecil" id="btnSemuaArea" type="button">Pilih semua</button></div>
       <div class="cek-daftar" id="bArea"></div>
       <div class="kecil" style="margin-top:6px">Satu sesi dibuat untuk setiap area yang dicentang, masing-masing dengan kode akses sendiri.</div>
       <div class="salah" id="salahBuat"></div>
@@ -256,13 +256,13 @@
       <div id="panelUnduh" class="panel" style="display:none;max-width:520px">
         <fieldset style="border:0;margin:0;padding:0">
           <legend style="font-weight:600;margin-bottom:6px">Bagian yang diunduh</legend>
-          <label style="display:flex;gap:8px;margin:4px 0"><input type="checkbox" id="ubSemua" checked> <b>Semua bagian</b></label>
+          <label style="display:inline-flex;width:fit-content;gap:8px;margin:4px 0"><input type="checkbox" id="ubSemua" checked> <b>Semua bagian</b></label>
           <div style="padding-left:22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2px 10px">
-            <label style="display:flex;gap:8px"><input type="checkbox" class="ubBag" value="ringkas" checked> Ringkasan &amp; per area</label>
-            <label style="display:flex;gap:8px"><input type="checkbox" class="ubBag" value="rapot" checked> Rapot peserta</label>
-            <label style="display:flex;gap:8px"><input type="checkbox" class="ubBag" value="analisis" checked> Analisis soal</label>
-            <label style="display:flex;gap:8px"><input type="checkbox" class="ubBag" value="temuan" checked> Temuan &amp; Rekomendasi</label>
-            <label style="display:flex;gap:8px"><input type="checkbox" class="ubBag" value="partisipasi" checked> Partisipasi</label>
+            <label style="display:inline-flex;width:fit-content;gap:8px"><input type="checkbox" class="ubBag" value="ringkas" checked> Ringkasan &amp; per area</label>
+            <label style="display:inline-flex;width:fit-content;gap:8px"><input type="checkbox" class="ubBag" value="rapot" checked> Rapot peserta</label>
+            <label style="display:inline-flex;width:fit-content;gap:8px"><input type="checkbox" class="ubBag" value="analisis" checked> Analisis soal</label>
+            <label style="display:inline-flex;width:fit-content;gap:8px"><input type="checkbox" class="ubBag" value="temuan" checked> Temuan &amp; Rekomendasi</label>
+            <label style="display:inline-flex;width:fit-content;gap:8px"><input type="checkbox" class="ubBag" value="partisipasi" checked> Partisipasi</label>
           </div>
         </fieldset>
         <div style="font-weight:600;margin:10px 0 6px">Format</div>
@@ -567,7 +567,9 @@ async function izinkanUlang(idP, nama, idSesi) {
 }
 
 /* ---------- Buat sesi ---------- */
-$('btnSemuaArea').onclick = () => { const c = [...$('bArea').querySelectorAll('input')]; const semua = c.every(x => x.checked); c.forEach(x => x.checked = !semua); };
+function labelSemuaArea() { const c = [...$('bArea').querySelectorAll('input')]; $('btnSemuaArea').textContent = c.length && c.every(x => x.checked) ? 'Kosongkan semua' : 'Pilih semua'; }
+$('btnSemuaArea').onclick = () => { const c = [...$('bArea').querySelectorAll('input')]; const semua = c.every(x => x.checked); c.forEach(x => x.checked = !semua); labelSemuaArea(); };
+$('bArea').addEventListener('change', labelSemuaArea);
 function kodeAcak(jab, area, terpakai) {
   const h = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const ar = (area.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'XX');
@@ -1216,7 +1218,7 @@ function gambarKoreksi() {
         <button class="kecil" onclick="semuaBenar(${k})">Anggap semua pilihan benar (dianulir, semua dapat poin)</button>
         <span class="kecil" id="kor_info_${k}"></span>
       </div></div>`).join('') + (KOR.soal.length ? `<div class="kartu">
-      <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="kkBank" checked> Terapkan juga ke <b>Bank Soal</b> (untuk sesi berikutnya)</label>
+      <label style="display:inline-flex;width:fit-content;gap:8px;align-items:center"><input type="checkbox" id="kkBank" checked> Terapkan juga ke <b>Bank Soal</b> (untuk sesi berikutnya)</label>
       <div class="salah" id="salahKoreksi"></div><div class="berhasil" id="okKoreksi"></div>
       <div style="margin-top:10px"><button class="utama" id="btnSimpanKoreksi">Simpan & hitung ulang nilai</button></div></div>` : '<div class="kartu kecil">Tidak ada soal yang dinilai.</div>');
   document.querySelectorAll('.kkCek, .kkNilai').forEach(el => el.onchange = () => tandaiKoreksi(+el.dataset.k));
@@ -1509,8 +1511,8 @@ $('bsFile').onchange = async () => {
 function gambarUpload(hasil) {
   const k = $('bsKartuUpload'); k.style.display = '';
   k.innerHTML = `<h3 style="margin-top:0">Upload: ${esc(BSUp.namaFile)} (${BSUp.baris.length} baris)</h3>
-    <label style="display:flex;gap:8px;align-items:flex-start;margin:6px 0"><input type="radio" name="bsMode" value="gabung" checked> <span><b>Tambah & perbarui</b> <span class="kecil">— soal dengan ID sama diperbarui, ID kosong/baru ditambahkan, soal lain dibiarkan. Paling aman.</span></span></label>
-    <label style="display:flex;gap:8px;align-items:flex-start;margin:6px 0"><input type="radio" name="bsMode" value="ganti"> <span><b>Ganti semua soal</b> <span class="kecil">— seluruh soal jabatan yang ada di file diganti isi file. Soal yang tidak ada di file akan dihapus.</span></span></label>
+    <label style="display:inline-flex;width:fit-content;gap:8px;align-items:flex-start;margin:6px 0"><input type="radio" name="bsMode" value="gabung" checked> <span><b>Tambah & perbarui</b> <span class="kecil">— soal dengan ID sama diperbarui, ID kosong/baru ditambahkan, soal lain dibiarkan. Paling aman.</span></span></label>
+    <label style="display:inline-flex;width:fit-content;gap:8px;align-items:flex-start;margin:6px 0"><input type="radio" name="bsMode" value="ganti"> <span><b>Ganti semua soal</b> <span class="kecil">— seluruh soal jabatan yang ada di file diganti isi file. Soal yang tidak ada di file akan dihapus.</span></span></label>
     <div id="bsHasilCek"></div>
     <div style="display:flex;gap:8px;margin-top:10px"><button id="bsCekUp">Periksa file</button><button class="utama" id="bsSimpanUp" disabled>Simpan ke Bank Soal</button><button id="bsBatalUp">Batal</button></div>`;
   document.querySelectorAll('input[name=bsMode]').forEach(r => r.onchange = () => { $('bsSimpanUp').disabled = true; $('bsHasilCek').innerHTML = ''; });
