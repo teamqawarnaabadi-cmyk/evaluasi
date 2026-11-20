@@ -83,6 +83,34 @@
   .barisTemuan.kepala { font-size:12px; font-weight:600; color:#4b5563; margin-bottom:4px; }
   .barisTemuan button { width:38px; height:38px; padding:0; }
   .kosongTemuan { border:1px dashed #9ca3af; border-radius:10px; padding:24px; text-align:center; color:#4b5563; }
+  .infoBiru { background:#e8f0f8; border:1px solid #c7d7ea; border-radius:10px; padding:10px 14px; font-size:13px; margin-bottom:14px; }
+  .barisSoal { display:grid; grid-template-columns:34px 1fr auto; gap:10px; padding:12px 0; border-bottom:1px solid #f0f2f5; align-items:start; }
+  .noSoal { font-weight:700; color:var(--biru); font-size:15px; } .teksSoal { font-size:15px; line-height:1.4; }
+  .opsiSoal { display:flex; flex-wrap:wrap; gap:4px 16px; margin:5px 0 3px; font-size:13px; color:#374151; } .opsiBenar { color:var(--hijau); font-weight:700; }
+  .pemisahSoal { margin-top:14px; padding:6px 0; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#4b5563; border-bottom:1px solid var(--garis); }
+  .barisBank { display:grid; grid-template-columns:1fr 130px 36px; gap:12px; padding:11px 0; border-bottom:1px solid #f0f2f5; align-items:center; }
+  .sakelar { display:inline-flex; gap:8px; align-items:center; width:fit-content; cursor:pointer; position:relative; }
+  .sakelar input { position:absolute; opacity:0; width:38px; height:22px; margin:0; cursor:pointer; }
+  .trekSakelar { width:38px; height:22px; border-radius:11px; background:#c5ccd6; position:relative; flex:none; transition:background .15s; }
+  .trekSakelar::after { content:''; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:8px; background:#fff; transition:left .15s; }
+  .sakelar input:checked + .trekSakelar { background:var(--hijau); } .sakelar input:checked + .trekSakelar::after { left:19px; }
+  .sakelar input:focus-visible + .trekSakelar { outline:2px solid var(--biru); outline-offset:2px; }
+  .barisPilihan { display:grid; grid-template-columns:62px 20px 1fr minmax(0,150px) 36px; gap:8px; align-items:center; margin-top:6px; }
+  .fKunciL { display:inline-flex; gap:4px; align-items:center; font-size:12px; color:var(--hijau); width:fit-content; }
+  .fSebaran { display:flex; align-items:center; gap:6px; font-size:12px; } .fSebaran .trek { min-width:50px; } .fSebaran .trek span { background:var(--hijau); } .fSebaran .trek.merah span { background:var(--merah); }
+  .kotakBatch { background:#fff6db; border-radius:10px; padding:12px 14px; font-size:13px; color:#5c4400; display:flex; flex-direction:column; gap:7px; margin-top:12px; }
+  .kotakBatch label { display:inline-flex; gap:8px; align-items:flex-start; width:fit-content; }
+  .garisAtas { border-top:1px solid #ecd9a3; padding-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .ikon.bahaya { font-weight:700; font-size:16px; }
+  .grid3 { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0 12px; }
+  @media (max-width:700px) { .grid3 { grid-template-columns:1fr 1fr; } }
+  .pilihArea { width:100%; text-align:left; display:flex; justify-content:space-between; align-items:center; padding:10px 12px; font-size:15px; }
+  .panelArea { position:absolute; left:0; right:0; top:100%; margin-top:4px; background:#fff; border:1px solid var(--garis); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.12); padding:10px; z-index:20; max-height:380px; overflow:auto; }
+  .cek-daftar.ringkas { grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:2px 8px; }
+  .cek-daftar.ringkas label { border:0; padding:5px 4px; width:fit-content; }
+  .kotakKode { flex:2 1 320px; border:1px solid var(--garis); border-radius:12px; padding:14px; background:#fafbfc; display:flex; flex-direction:column; gap:10px; }
+  .barisKode { display:grid; grid-template-columns:1fr 150px 32px; gap:8px; align-items:center; }
+  .barisKode input { font-family:ui-monospace,Menlo,Consolas,monospace; font-weight:700; letter-spacing:.05em; }
 </style>
 </head>
 <body>
@@ -109,9 +137,8 @@
     <div class="nav">
       <button data-h="hBeranda" class="aktif">Beranda & Sesi</button>
       <button data-h="hBuat">Buat Sesi</button>
-      <button data-h="hPaket">Bank Soal</button>
+      <button data-h="hPaket">Soal</button>
       <button data-h="hLaporan">Laporan</button>
-      <button data-h="hKoreksi">Koreksi Kunci</button>
       <button data-h="hPeriksa">Periksa Data</button>
       <button id="btnKeluar" class="bahaya">Keluar</button>
     </div>
@@ -138,103 +165,104 @@
 
   <!-- BUAT SESI -->
   <section class="halaman" id="hBuat">
-    <div class="kartu">
-      <h2>Buat sesi baru</h2>
-      <div class="grid2">
-        <div><label class="judul" for="bBatch">Batch</label><input type="text" id="bBatch" list="dlBatch" placeholder="Contoh: 2027 – Batch 1"><datalist id="dlBatch"></datalist></div>
-        <div><label class="judul" for="bJabatan">Jabatan</label><select id="bJabatan"></select></div>
-        <div><label class="judul" for="bPaket">Paket soal</label><select id="bPaket"></select></div>
-        <div><label class="judul" for="bTanggal">Tanggal pelaksanaan</label><input type="date" id="bTanggal"></div>
-        <div><label class="judul" for="bJam">Jam tutup (WIB)</label><input type="time" id="bJam" value="16:00"><div class="kecil">Kosongkan bila tidak ingin tutup otomatis.</div></div>
-        <div><label class="judul" for="bDurasi">Durasi (menit)</label><input type="number" id="bDurasi" min="1" value="45"></div>
-        <div><label class="judul" for="bKuota">Kuota peserta</label><input type="number" id="bKuota" min="1" value="500"></div>
-        <div><label class="judul" for="bStatus">Status awal</label><select id="bStatus"><option>Draf</option><option>Dibuka</option></select></div>
+    <div class="kartu" style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+      <div style="flex:3 1 520px;min-width:0">
+        <h2 style="margin-top:0">Buat sesi</h2>
+        <div class="grid3">
+          <div><label class="judul" for="bJabatan">Jabatan</label><select id="bJabatan"></select></div>
+          <div><label class="judul" for="bBatch">Batch</label><input type="text" id="bBatch" list="dlBatch" placeholder="Contoh: Kasir 2027 B1"><datalist id="dlBatch"></datalist></div>
+          <div><div class="judul" style="margin:12px 0 5px;font-weight:600;font-size:14px">Soal</div><div id="bInfoSoal" style="padding:9px 0"></div></div>
+          <div><label class="judul" for="bTanggal">Tanggal</label><input type="date" id="bTanggal"></div>
+          <div><label class="judul" for="bMulai">Jam mulai (WIB)</label><input type="time" id="bMulai"></div>
+          <div><label class="judul" for="bJam">Jam tutup (WIB)</label><input type="time" id="bJam" value="16:00"></div>
+        </div>
+        <div class="kecil" id="bKetJam" style="margin-top:4px"></div>
+        <div style="position:relative;margin-top:12px">
+          <div style="font-weight:600;font-size:14px;margin-bottom:5px">Area</div>
+          <button type="button" id="bAreaBtn" class="pilihArea" aria-expanded="false"><span id="bAreaLabel">Pilih area…</span><span aria-hidden="true">▾</span></button>
+          <div id="bAreaPanel" class="panelArea" style="display:none">
+            <input type="text" id="bAreaCari" placeholder="Cari area" aria-label="Cari area">
+            <div style="display:flex;gap:8px;margin:6px 0"><button class="kecil" id="btnSemuaArea" type="button">Pilih semua</button><button class="kecil" id="btnKosongArea" type="button">Kosongkan</button></div>
+            <div class="cek-daftar ringkas" id="bArea"></div>
+          </div>
+        </div>
+        <details style="margin-top:12px"><summary id="bRingkasLain" style="cursor:pointer;color:var(--biru)">Pengaturan lain</summary>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <div><label class="judul" for="bDurasi">Durasi (menit)</label><input type="number" id="bDurasi" min="1" value="45" style="width:130px"></div>
+            <div><label class="judul" for="bKuota">Kuota peserta</label><input type="number" id="bKuota" min="1" value="500" style="width:130px"></div>
+          </div>
+        </details>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;margin:12px 0 6px"><span style="font-weight:600;font-size:14px">Area</span><button class="kecil" id="btnSemuaArea" type="button">Pilih semua</button></div>
-      <div class="cek-daftar" id="bArea"></div>
-      <div class="kecil" style="margin-top:6px">Satu sesi dibuat untuk setiap area yang dicentang, masing-masing dengan kode akses sendiri.</div>
-      <div class="salah" id="salahBuat"></div>
-      <div style="margin-top:12px"><button class="utama" id="btnSiapkanKode">Lanjut: siapkan kode akses</button></div>
-      <div id="panelKode"></div>
+      <div class="kotakKode">
+        <div class="kepalaKartu" style="margin:0"><h3 style="margin:0">Kode akses</h3><button class="kecil" id="bUlangSemua" type="button">↻ Buat ulang semua</button></div>
+        <div class="kecil" id="bKetKode"></div>
+        <div id="bKode"></div>
+        <div class="kecil" id="bKetStatus" style="border-top:1px solid var(--garis);padding-top:10px"></div>
+        <div class="salah" id="salahBuat"></div>
+        <button class="utama" id="btnSimpanSesi" type="button" style="width:100%;padding:11px">Buat sesi</button>
+      </div>
     </div>
+    <div id="panelKode"></div>
   </section>
 
-  <!-- BANK SOAL & PAKET -->
+  <!-- SOAL (Bank Soal + Koreksi Kunci) -->
   <section class="halaman" id="hPaket">
-    <div class="kartu">
-      <h2>Bank soal & paket</h2>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-        <div style="min-width:180px"><label class="judul">Jabatan</label><select id="bsJabatan"></select></div>
-        <button id="bsMuat">↻ Muat</button>
-        <button class="utama" id="bsBaru">+ Soal baru</button>
-        <span style="flex:1"></span>
-        <button id="bsUnduhWord">⬇ Unduh Word</button>
-        <button id="bsUnduh">⬇ Unduh Excel</button>
-        <button id="bsUnggahBtn">⬆ Upload Excel</button>
-        <input type="file" id="bsFile" accept=".xlsx,.xls,.csv" style="display:none">
+    <div class="kartu" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+      <div style="min-width:170px"><label class="judul" for="bsJabatan" style="margin-top:0">Jabatan</label><select id="bsJabatan"></select></div>
+      <div class="tabSesi" role="tablist">
+        <button role="tab" id="bsTabAktif" class="aktif">Soal aktif <span id="bsNAktif"></span></button>
+        <button role="tab" id="bsTabBank">Bank soal <span id="bsNBank"></span></button>
       </div>
-      <p class="kecil" style="margin:10px 0 0">Mengubah atau menghapus soal <b>tidak mengubah sesi yang sudah berjalan</b> (setiap sesi menyimpan foto soalnya sendiri). Perubahan berlaku untuk sesi yang belum dimulai peserta.</p>
+      <button class="utama" id="bsBaru">+ Soal baru</button>
+      <span style="flex:1"></span>
+      <button class="kecil" id="bsUnduhWord">⬇ Word</button>
+      <button class="kecil" id="bsUnduh">⬇ Excel</button>
+      <button class="kecil" id="bsUnggahBtn">⬆ Upload Excel</button>
+      <input type="file" id="bsFile" accept=".xlsx,.xls,.csv" style="display:none">
     </div>
-
+    <div id="bsInfoBatch"></div>
     <div class="kartu" id="bsKartuUpload" style="display:none"></div>
-
-    <div class="kartu">
-      <h3 style="margin-top:0">Paket soal</h3>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-        <div style="min-width:240px;flex:1"><label class="judul">Pilih paket untuk diatur</label><select id="bsPaket"></select></div>
+    <div class="kartu" style="padding-top:6px">
+      <div id="bsAlat" style="display:none;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 0;border-bottom:1px solid var(--garis)">
+        <input type="text" id="bsCari" placeholder="Cari kata di soal atau topik" style="flex:1;min-width:220px">
+        <select id="bsSaring" style="width:auto" aria-label="Tampilkan"><option value="">Semua</option><option value="Ya">Aktif</option><option value="Tidak">Tidak aktif</option></select>
       </div>
-      <div id="bsPanelPaket" class="panel" style="display:none">
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-          <div style="min-width:220px;flex:1"><label class="judul">Nama paket</label><input type="text" id="bsNamaPaket" placeholder="mis. Kasir 2027 B1"></div>
-          <button class="kecil" id="bsCentangSemua">Centang semua soal evaluasi</button>
-          <button class="kecil" id="bsKosongkan">Kosongkan</button>
-        </div>
-        <div class="kecil" id="bsHitung" style="margin:10px 0"></div>
-        <div class="salah" id="bsSalahPaket"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="utama" id="bsSimpanPaket">Simpan paket</button>
-          <button id="bsSalinPaket">Salin jadi paket baru</button>
-          <button class="bahaya" id="bsHapusPaket">Hapus paket</button>
-        </div>
-        <p class="kecil" style="margin-bottom:0">Centang soal di daftar bawah. Soal bagian <b>Anonim</b> selalu ikut otomatis di setiap paket.</p>
-      </div>
-    </div>
-
-    <div class="kartu">
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
-        <div style="flex:2;min-width:200px"><label class="judul">Cari</label><input type="text" id="bsCari" placeholder="kata di pertanyaan, topik, atau ID"></div>
-        <div style="flex:1;min-width:130px"><label class="judul">Bagian</label><select id="bsFBagian"><option value="">Semua</option><option>Evaluasi</option><option>Anonim</option></select></div>
-        <div style="flex:1;min-width:150px"><label class="judul">Jenis</label><select id="bsFJenis"><option value="">Semua</option></select></div>
-        <div style="flex:1;min-width:150px"><label class="judul">Paket</label><select id="bsFPaket"></select></div>
-      </div>
-      <div class="kecil" id="bsInfo"></div>
-      <div class="geser"><table id="bsTabel"></table></div>
+      <div class="kepalaKartu" style="padding:10px 0;border-bottom:1px solid var(--garis);margin:0"><div id="bsInfo"></div><div class="kecil" id="bsKet"></div></div>
+      <div id="bsDaftar"></div>
     </div>
   </section>
 
   <!-- Formulir edit soal (jendela) -->
   <div id="bsJendela" style="position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:90;display:none;overflow:auto;padding:20px 10px">
-    <div class="kartu" style="max-width:760px;margin:0 auto">
-      <h2 id="bsJudulForm">Soal baru</h2>
+    <div class="kartu" style="max-width:820px;margin:0 auto">
+      <div class="kepalaKartu"><h2 id="bsJudulForm" style="margin:0">Soal baru</h2><button id="fTutup" aria-label="Tutup" style="width:36px;height:36px;padding:0">✕</button></div>
       <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
-        <div><label class="judul">Bagian</label><select id="fBagian"><option>Evaluasi</option><option>Anonim</option></select></div>
-        <div><label class="judul">Jenis soal</label><select id="fJenis"></select></div>
-        <div><label class="judul">Nomor urut</label><input type="number" id="fUrutan" min="1" placeholder="otomatis"></div>
-        <div><label class="judul">ID Soal</label><input type="text" id="fId" placeholder="otomatis"></div>
+        <div><label class="judul" for="fBagian">Bagian</label><select id="fBagian"><option>Evaluasi</option><option>Anonim</option></select></div>
+        <div><label class="judul" for="fJenis">Jenis soal</label><select id="fJenis"></select></div>
+        <div><label class="judul" for="fTopik">Topik</label><input type="text" id="fTopik"></div>
+        <div><label class="judul" for="fUrutan">Nomor urut</label><input type="number" id="fUrutan" min="1" placeholder="otomatis"></div>
       </div>
       <div class="kecil" id="fKetJenis" style="margin-top:6px;background:var(--biru-muda);border-radius:6px;padding:6px 10px"></div>
-      <label class="judul" style="margin-top:10px;display:block">Topik <span class="kecil">(dipakai di laporan per topik)</span></label><input type="text" id="fTopik">
-      <label class="judul" style="margin-top:10px;display:block">Pertanyaan</label><textarea id="fTanya" rows="3"></textarea>
+      <label class="judul" for="fTanya">Pertanyaan</label><textarea id="fTanya" rows="3"></textarea>
       <div id="fBlokPilihan">
-        <label class="judul" style="margin-top:10px;display:block">Pilihan jawaban <span class="kecil" id="fPetunjukKunci">— centang "benar" pada jawaban yang menjadi kunci</span></label>
+        <div class="judul" style="margin:12px 0 5px;font-weight:600">Pilihan jawaban <span class="kecil" id="fPetunjukKunci" style="font-weight:400">— centang "benar" pada jawaban yang menjadi kunci</span><span class="kecil" id="fPetunjukSebaran" style="font-weight:400"></span></div>
         <div id="fPilihan"></div>
-        <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap"><button class="kecil" id="fTambahPilihan">+ Tambah pilihan</button><button class="kecil" id="fIsiLikert" style="display:none">Isi pilihan Likert standar</button></div>
+        <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;align-items:center">
+          <button class="kecil" id="fTambahPilihan" type="button">+ Tambah pilihan</button>
+          <button class="kecil" id="fIsiLikert" type="button" style="display:none">Isi pilihan Likert standar</button>
+          <span id="fPilihBatch" class="kecil"></span>
+        </div>
       </div>
-      <div id="fBlokNilai" style="margin-top:10px"><label class="judul">Dinilai?</label>
+      <div id="fBlokNilai" style="margin-top:10px"><label class="judul" for="fDinilai">Dinilai?</label>
         <select id="fDinilai" style="width:auto"><option value="Ya">Ya — masuk perhitungan nilai</option><option value="Tidak">Tidak — hanya dicatat</option></select></div>
-      <label class="judul" style="margin-top:10px;display:block">Penjelasan jawaban <span class="kecil">(muncul di Analisis Soal laporan)</span></label><textarea id="fJelas" rows="2"></textarea>
+      <label style="display:inline-flex;width:fit-content;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="fAktif" checked> <b>Aktif</b> <span class="kecil">(dipakai untuk batch berikutnya)</span></label>
+      <div id="fBatch"></div>
+      <label class="judul" for="fJelas">Penjelasan jawaban <span class="kecil" style="font-weight:400">(muncul di Analisis Soal laporan)</span></label><textarea id="fJelas" rows="2"></textarea>
       <div class="salah" id="fSalah"></div>
-      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end"><button id="fBatal">Batal</button><button class="utama" id="fSimpan">Simpan soal</button></div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap">
+        <button class="bahaya" id="fHapus" type="button">Hapus soal dari bank</button>
+        <div style="display:flex;gap:8px"><button id="fBatal" type="button">Batal</button><button class="utama" id="fSimpan" type="button">Simpan</button></div>
+      </div>
     </div>
   </div>
 
@@ -288,20 +316,6 @@
       <div class="tabLap" id="tSuara" style="display:none"></div>
       <div class="tabLap" id="tPartisipasi" style="display:none"></div>
     </div>
-  </section>
-
-  <!-- KOREKSI KUNCI -->
-  <section class="halaman" id="hKoreksi">
-    <div class="kartu">
-      <h2>Koreksi kunci jawaban</h2>
-      <p class="kecil">Dipakai bila ternyata ada kunci yang salah setelah sesi berjalan (mis. karena komplain). Setelah disimpan, <b>semua nilai dan status lulus</b> peserta di jabatan + batch ini dihitung ulang otomatis.</p>
-      <div class="grid2">
-        <div><label class="judul">Jabatan</label><select id="kJabatan"></select></div>
-        <div><label class="judul">Batch</label><select id="kBatch"></select></div>
-      </div>
-      <div style="margin-top:12px"><button class="utama" id="btnMuatKoreksi">Tampilkan soal</button> <span class="kecil" id="infoKoreksi"></span></div>
-    </div>
-    <div id="daftarKoreksi"></div>
   </section>
 
   <!-- PERIKSA DATA -->
@@ -405,7 +419,6 @@ function bukaHalaman(id) {
   if (id === 'hBeranda') { gambarSesi(); muatSesi(true); }
   if (id === 'hLaporan') siapkanLaporan();
   if (id === 'hPeriksa') isiPilihanHapus();
-  if (id === 'hKoreksi') siapkanKoreksi();
 }
 document.querySelectorAll('.nav button[data-h]').forEach(b => b.onclick = () => bukaHalaman(b.dataset.h));
 
@@ -415,26 +428,6 @@ async function muatForm(latar) {
   if (!j.ok) { if (!j.keluar) alert(j.pesan); return; }
   terapkanForm(j);
 }
-function terapkanForm(j) {
-  DATA.form = j;
-  const tercentang = [...$('bArea').querySelectorAll('input:checked')].map(x => x.value);
-  const jabB = $('bJabatan').value;
-  const opsiJab = j.jabatan.map(x => `<option>${esc(x.nama)}</option>`).join('');
-  $('bJabatan').innerHTML = opsiJab;
-  $('dlBatch').innerHTML = j.batch.map(b => `<option value="${esc(b)}">`).join('');
-  $('bArea').innerHTML = j.area.length ? j.area.map(a => `<label><input type="checkbox" value="${esc(a)}" ${tercentang.includes(a) ? 'checked' : ''}> ${esc(a)}</label>`).join('')
-    : '<div class="kecil">Belum ada area. Isi dulu sheet Toko di Google Sheets.</div>';
-  if (jabB) $('bJabatan').value = jabB;
-  isiPaketBuat();
-}
-function isiPaketBuat() {
-  const jab = $('bJabatan').value;
-  const p = (DATA.form.paket || []).filter(x => x.jabatan === jab);
-  $('bPaket').innerHTML = '<option value="">Semua soal jabatan ini</option>' + p.map(x => `<option value="${esc(x.nama)}">${esc(x.nama)} (${x.jumlah} soal)</option>`).join('');
-  const d = DATA.form.jabatan.find(x => x.nama === jab); if (d) $('bDurasi').value = d.durasi;
-}
-$('bJabatan').onchange = isiPaketBuat;
-
 /* ---------- Beranda: daftar sesi ---------- */
 async function muatSesi(latar) {
   const j = await api('adm_ringkasan', {}, { diam: latar });
@@ -453,17 +446,18 @@ function tglIndo(t) {
 }
 function gambarSesi() {
   const q = $('saringCari').value.trim().toLowerCase();
-  const arsip = s => s.status === 'Ditutup';
+  const arsip = s => s.status === 'Ditutup' || s.pintu === 'Sesi sudah ditutup.';
+  const namaArea = a => { const d = String(a || '').split(',').map(x => x.trim()).filter(Boolean); return !d.length ? 'Semua area' : d.length === 1 ? d[0] : d.length + ' area'; };
   $('nAktif').textContent = '(' + DATA.sesi.filter(s => !arsip(s)).length + ')';
   $('nArsip').textContent = '(' + DATA.sesi.filter(arsip).length + ')';
   const d = DATA.sesi.filter(s => (TAB_SESI === 'arsip') === arsip(s) && (!q || [s.batch, s.area, s.kode, s.jabatan, s.id].join(' ').toLowerCase().includes(q)));
   const ikonSalin = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>';
   $('tabelSesi').innerHTML = '<tr><th>Sesi</th><th>Jadwal</th><th>Kode akses</th><th>Status</th><th>Peserta</th><th></th></tr>' +
     (d.length ? d.map(s => `<tr>
-      <td><div class="namaSesi">${esc(s.jabatan)} · ${esc(s.area || 'Semua area')}</div><div class="kecil">${esc(s.batch)} · ${esc(s.id)}${s.paket ? ' · ' + esc(s.paket) : ''}</div></td>
-      <td style="white-space:nowrap"><b>${esc(tglIndo(s.tanggal) || 'Tanpa tanggal')}</b><div class="kecil">${s.jamTutup ? 'tutup ' + esc(s.jamTutup.slice(0, 5)) + ' WIB' : 'tanpa jam tutup'} · ${esc(s.durasi)} mnt${Number(s.tambahan) ? ' · +' + esc(s.tambahan) + ' kirim' : ''}</div></td>
+      <td><div class="namaSesi" title="${esc(s.area || 'Semua area')}">${esc(s.jabatan)} · ${esc(namaArea(s.area))}</div><div class="kecil">${esc(s.batch)} · ${esc(s.id)}${s.paket ? ' · ' + esc(s.paket) : ''}</div></td>
+      <td style="white-space:nowrap"><b>${esc(tglIndo(s.tanggal) || 'Tanpa tanggal')}</b><div class="kecil">${s.jamMulai ? esc(String(s.jamMulai).slice(0, 5)) + (s.jamTutup ? '–' + esc(s.jamTutup.slice(0, 5)) : '') + ' WIB' : s.jamTutup ? 'tutup ' + esc(s.jamTutup.slice(0, 5)) + ' WIB' : 'tanpa jam tutup'} · ${esc(s.durasi)} mnt${Number(s.tambahan) ? ' · +' + esc(s.tambahan) + ' kirim' : ''}</div></td>
       <td style="white-space:nowrap"><span class="kodeAkses">${esc(s.kode)}</span> <button class="ikon" title="Salin kode" aria-label="Salin kode ${esc(s.kode)}" onclick="salin('${esc(s.kode)}', this)">${ikonSalin}</button></td>
-      <td><span class="lencana l-${esc(s.status)}">${esc(s.status)}</span>${s.status === 'Dibuka' && s.pintu ? `<div class="kecil" style="color:var(--merah)">${esc(s.pintu)}</div>` : ''}</td>
+      <td><span class="lencana l-${esc(s.status)}">${esc(s.status)}</span>${s.status === 'Draf' && s.bukaOtomatis ? `<div class="kecil">${s.pintu ? 'buka otomatis ' + esc(s.bukaOtomatis) : '<b style="color:var(--hijau)">terbuka otomatis</b>'}</div>` : ''}${s.status === 'Dibuka' && s.pintu ? `<div class="kecil" style="color:var(--merah)">${esc(s.pintu)}</div>` : ''}</td>
       <td><div class="hitungP"><div class="p"><b>${s.hitung.sedang}</b><span>Proses</span></div><div class="s"><b>${s.hitung.selesai}</b><span>Selesai</span></div><div class="t"><b>${s.hitung.tidakKirim}</b><span>Tidak kirim</span></div></div></td>
       <td style="white-space:nowrap;text-align:right">
         ${s.status !== 'Dibuka' ? `<button class="kecil utama" onclick="ubahStatus('${s.id}','Dibuka')">Buka</button>` : `<button class="kecil bahaya" onclick="ubahStatus('${s.id}','Ditutup')">Tutup</button>`}
@@ -567,48 +561,116 @@ async function izinkanUlang(idP, nama, idSesi) {
 }
 
 /* ---------- Buat sesi ---------- */
-function labelSemuaArea() { const c = [...$('bArea').querySelectorAll('input')]; $('btnSemuaArea').textContent = c.length && c.every(x => x.checked) ? 'Kosongkan semua' : 'Pilih semua'; }
-$('btnSemuaArea').onclick = () => { const c = [...$('bArea').querySelectorAll('input')]; const semua = c.every(x => x.checked); c.forEach(x => x.checked = !semua); labelSemuaArea(); };
-$('bArea').addEventListener('change', labelSemuaArea);
 function kodeAcak(jab, area, terpakai) {
   const h = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const ar = (area.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'XX');
+  const ar = (String(area).replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'XX');
   for (let n = 0; n < 50; n++) {
     let k = (KODE_JABATAN[jab] || 'EVL') + '-' + ar;
     for (let i = 0; i < 3; i++) k += h[Math.floor(Math.random() * h.length)];
     if (!terpakai.includes(k)) return k;
   }
 }
-$('btnSiapkanKode').onclick = () => {
-  const area = [...$('bArea').querySelectorAll('input:checked')].map(x => x.value);
-  const batch = $('bBatch').value.trim();
+const BKODE = {};   // kode yang sedang disiapkan: kunci (area / "*") → kode
+const jabInfo = () => (DATA.form.jabatan || []).find(x => x.nama === $('bJabatan').value) || {};
+const satuKode = () => !jabInfo().anonim;   // tanpa bagian anonim (SM/ASM) → satu kode untuk semua area
+const areaDipilih = () => [...$('bArea').querySelectorAll('input:checked')].map(x => x.value);
+function terpakaiKode(kecuali) {
+  return DATA.sesi.map(s => String(s.kode).toUpperCase()).concat(Object.entries(BKODE).filter(([k]) => k !== kecuali).map(([, v]) => v));
+}
+function barisKode() {
+  const area = areaDipilih(), semua = area.length && area.length === (DATA.form.area || []).length;
+  if (!area.length) return [];
+  if (satuKode()) return [{ kunci: '*', label: semua ? 'Semua area' : area.length === 1 ? area[0] : area.length + ' area terpilih', area: semua ? '' : area.join(', ') }];
+  return area.map(a => ({ kunci: a, label: a, area: a }));
+}
+function gambarKode() {
+  const b = barisKode(), jab = $('bJabatan').value;
+  Object.keys(BKODE).forEach(k => { if (!b.some(x => x.kunci === k)) delete BKODE[k]; });
+  b.forEach(x => { if (!BKODE[x.kunci]) BKODE[x.kunci] = kodeAcak(jab, x.kunci === '*' ? 'ALL' : x.area, terpakaiKode(x.kunci)); });
+  $('bKetKode').innerHTML = satuKode()
+    ? `<b>${esc(jab)}</b>: satu kode untuk semua area terpilih (tanpa bagian anonim). Area peserta tetap terbaca dari kode toko. Setiap sesi selalu punya kode sendiri.`
+    : `<b>${esc(jab)}</b>: satu kode per area (untuk mengenali area jawaban anonim). Dibuat otomatis, boleh diketik ulang.`;
+  $('bKode').innerHTML = b.length ? b.map(x => `<div class="barisKode"><span>${esc(x.label)}</span>
+      <input type="text" class="kodeArea" data-kunci="${esc(x.kunci)}" value="${esc(BKODE[x.kunci])}" aria-label="Kode akses ${esc(x.label)}">
+      <button type="button" class="ikon" aria-label="Buat ulang kode ${esc(x.label)}" onclick="ulangKode('${esc(x.kunci)}')">↻</button></div>`).join('')
+    : '<div class="kecil" style="padding:8px 0">Pilih area dulu.</div>';
+  document.querySelectorAll('.kodeArea').forEach(i => i.oninput = () => { BKODE[i.dataset.kunci] = i.value.trim().toUpperCase(); });
+  $('btnSimpanSesi').textContent = b.length > 1 ? `Buat ${b.length} sesi` : 'Buat sesi';
+  $('btnSimpanSesi').disabled = !b.length;
+}
+function ulangKode(k) { const x = barisKode().find(b => b.kunci === k); BKODE[k] = kodeAcak($('bJabatan').value, k === '*' ? 'ALL' : x.area, terpakaiKode(k)); gambarKode(); }
+$('bUlangSemua').onclick = () => { Object.keys(BKODE).forEach(k => delete BKODE[k]); gambarKode(); };
+function labelArea() {
+  const a = areaDipilih(), n = (DATA.form.area || []).length;
+  $('bAreaLabel').textContent = !a.length ? 'Pilih area…' : a.length === n ? `Semua area (${n})` : a.length <= 3 ? a.join(', ') : `${a.slice(0, 3).join(', ')} +${a.length - 3} area`;
+  $('btnSemuaArea').textContent = n && a.length === n ? 'Semua terpilih' : 'Pilih semua';
+  gambarKode();
+}
+$('bAreaBtn').onclick = () => { const buka = $('bAreaPanel').style.display === 'none'; $('bAreaPanel').style.display = buka ? 'block' : 'none'; $('bAreaBtn').setAttribute('aria-expanded', buka); if (buka) $('bAreaCari').focus(); };
+document.addEventListener('click', e => { if (!$('hBuat').contains(e.target) || (!$('bAreaPanel').contains(e.target) && !$('bAreaBtn').contains(e.target))) { $('bAreaPanel').style.display = 'none'; $('bAreaBtn').setAttribute('aria-expanded', false); } });
+$('bAreaCari').oninput = () => { const q = $('bAreaCari').value.trim().toLowerCase(); $('bArea').querySelectorAll('label').forEach(l => l.style.display = !q || l.textContent.toLowerCase().includes(q) ? '' : 'none'); };
+$('btnSemuaArea').onclick = () => { $('bArea').querySelectorAll('input').forEach(x => x.checked = true); labelArea(); };
+$('btnKosongArea').onclick = () => { $('bArea').querySelectorAll('input').forEach(x => x.checked = false); labelArea(); };
+$('bArea').addEventListener('change', labelArea);
+// Jam tutup otomatis: 16.00; bila jam mulai + durasi melewati 16.00 → jam mulai + 1 jam
+let JAM_MANUAL = false;
+$('bJam').oninput = () => { JAM_MANUAL = true; ketJadwal(); };
+function keMenit(t) { const m = String(t || '').match(/^(\d{1,2}):(\d{2})/); return m ? +m[1] * 60 + +m[2] : null; }
+const keJam = m => ('0' + Math.floor(m / 60) % 24).slice(-2) + ':' + ('0' + m % 60).slice(-2);
+function aturJamTutup() {
+  if (JAM_MANUAL) return;
+  const m = keMenit($('bMulai').value), d = Number($('bDurasi').value) || 45;
+  $('bJam').value = m != null && m + d > 16 * 60 ? keJam(m + 60) : '16:00';
+}
+function ketJadwal() {
+  const m = keMenit($('bMulai').value);
+  $('bKetJam').textContent = JAM_MANUAL ? 'Jam tutup diubah manual.' : 'Jam tutup otomatis 16.00 (bila jam mulai terlalu sore: jam mulai + 1 jam). Boleh diubah.';
+  $('bKetStatus').innerHTML = m != null && $('bTanggal').value
+    ? `Sesi dibuat sebagai <b>Draf</b> dan <b>otomatis dibuka ${keJam(Math.max(0, m - 30))} WIB</b> (30 menit sebelum jam mulai). Bisa juga dibuka manual dari Beranda.`
+    : 'Sesi dibuat sebagai <b>Draf</b>. Isi tanggal & jam mulai agar terbuka otomatis, atau buka manual dari Beranda.';
+  $('bRingkasLain').textContent = `Pengaturan lain · durasi ${$('bDurasi').value || 45} menit · kuota ${$('bKuota').value || 500}`;
+}
+['bMulai', 'bDurasi'].forEach(id => $(id).addEventListener('input', () => { aturJamTutup(); ketJadwal(); }));
+['bTanggal', 'bKuota'].forEach(id => $(id).addEventListener('input', ketJadwal));
+function infoSoalBuat() {
+  const j = jabInfo();
+  $('bInfoSoal').innerHTML = j.soalAktif ? `<b>${j.soalAktif}</b> soal aktif ${esc(j.nama)}` : `<span style="color:var(--merah)">Belum ada soal aktif</span>`;
+  if (j.durasi) { $('bDurasi').value = j.durasi; aturJamTutup(); }
+  ketJadwal(); gambarKode();
+}
+$('bJabatan').onchange = () => { Object.keys(BKODE).forEach(k => delete BKODE[k]); infoSoalBuat(); };
+function terapkanForm(j) {
+  DATA.form = j;
+  const tercentang = areaDipilih(), jabB = $('bJabatan').value;
+  $('bJabatan').innerHTML = j.jabatan.map(x => `<option>${esc(x.nama)}</option>`).join('');
+  $('dlBatch').innerHTML = j.batch.map(b => `<option value="${esc(b)}">`).join('');
+  $('bArea').innerHTML = j.area.length ? j.area.map(a => `<label><input type="checkbox" value="${esc(a)}" ${tercentang.includes(a) ? 'checked' : ''}> ${esc(a)}</label>`).join('')
+    : '<div class="kecil">Belum ada area. Isi dulu sheet Toko di Google Sheets.</div>';
+  if (jabB) $('bJabatan').value = jabB;
+  labelArea(); infoSoalBuat();
+}
+$('btnSimpanSesi').onclick = async () => {
+  const batch = $('bBatch').value.trim(), b = barisKode();
   $('salahBuat').textContent = '';
   if (!batch) { $('salahBuat').textContent = 'Isi nama batch.'; return; }
-  if (!area.length) { $('salahBuat').textContent = 'Centang minimal satu area.'; return; }
-  const terpakai = DATA.sesi.map(s => String(s.kode).toUpperCase());
-  const jab = $('bJabatan').value;
-  const baris = area.map(a => { const k = kodeAcak(jab, a, terpakai); terpakai.push(k); return { a, k }; });
-  $('panelKode').innerHTML = `<div class="panel">
-    <b>Kode akses per area</b> <span class="kecil">— rekomendasi otomatis, boleh diganti (huruf, angka, tanda -)</span>
-    <table style="margin-top:8px"><tr><th>Area</th><th>Kode akses</th></tr>
-    ${baris.map(b => `<tr><td>${esc(b.a)}</td><td><input type="text" class="kodeArea" data-area="${esc(b.a)}" value="${b.k}" style="max-width:220px;font-family:monospace"></td></tr>`).join('')}</table>
-    <div class="salah" id="salahSimpanSesi"></div>
-    <div style="margin-top:10px;text-align:right"><button class="utama" id="btnSimpanSesi">Simpan ${baris.length} sesi</button></div></div>`;
-  $('btnSimpanSesi').onclick = simpanSesiBaru;
-};
-async function simpanSesiBaru() {
-  const umum = { batch: $('bBatch').value.trim(), jabatan: $('bJabatan').value, paket: $('bPaket').value, tanggal: $('bTanggal').value,
-                 jamTutup: $('bJam').value, durasi: $('bDurasi').value, kuota: $('bKuota').value, status: $('bStatus').value };
-  const sesi = [...document.querySelectorAll('.kodeArea')].map(i => Object.assign({}, umum, { area: i.dataset.area, kode: i.value.trim().toUpperCase() }));
+  if (!b.length) { $('salahBuat').textContent = 'Pilih minimal satu area.'; return; }
+  if (!jabInfo().soalAktif) { $('salahBuat').textContent = 'Belum ada soal aktif untuk jabatan ini. Aktifkan soal di menu Soal.'; return; }
+  const kode = b.map(x => (BKODE[x.kunci] || '').trim().toUpperCase());
+  if (kode.some(k => !k)) { $('salahBuat').textContent = 'Ada kode akses yang kosong.'; return; }
+  if (new Set(kode).size !== kode.length) { $('salahBuat').textContent = 'Ada kode akses yang sama. Setiap sesi harus punya kode sendiri.'; return; }
+  const umum = { batch, jabatan: $('bJabatan').value, tanggal: $('bTanggal').value, jamMulai: $('bMulai').value, jamTutup: $('bJam').value,
+                 durasi: $('bDurasi').value, kuota: $('bKuota').value, status: 'Draf' };
+  const sesi = b.map((x, i) => Object.assign({}, umum, { area: x.area, kode: kode[i] }));
   const j = await api('adm_buatSesi', { sesi });
-  if (!j.ok) { $('salahSimpanSesi').textContent = j.pesan; return; }
-  $('panelKode').innerHTML = `<div class="panel"><b style="color:var(--hijau)">✓ ${j.dibuat.length} sesi berhasil dibuat.</b>
-    <table style="margin-top:8px"><tr><th>ID</th><th>Area</th><th>Kode akses</th></tr>${j.dibuat.map(d => `<tr><td>${esc(d.id)}</td><td>${esc(d.area)}</td><td><b style="font-family:monospace">${esc(d.kode)}</b></td></tr>`).join('')}</table>
-    <div class="kecil" style="margin-top:6px">${umum.status === 'Draf' ? 'Sesi masih berstatus Draf. Buka lewat menu Beranda & Sesi saat waktunya tiba.' : 'Sesi sudah dibuka.'}</div></div>`;
+  if (!j.ok) { $('salahBuat').textContent = j.pesan; return; }
+  $('panelKode').innerHTML = `<div class="kartu"><b style="color:var(--hijau)">✓ ${j.dibuat.length} sesi berhasil dibuat (Draf).</b>
+    <div class="geser"><table style="margin-top:8px"><tr><th>ID</th><th>Area</th><th>Kode akses</th></tr>${j.dibuat.map(d => `<tr><td>${esc(d.id)}</td><td style="white-space:normal">${esc(d.area)}</td><td><span class="kodeAkses">${esc(d.kode)}</span></td></tr>`).join('')}</table></div>
+    <div class="kecil" style="margin-top:6px">${umum.jamMulai && umum.tanggal ? 'Sesi terbuka otomatis 30 menit sebelum jam mulai.' : 'Buka sesi lewat Beranda & Sesi saat waktunya tiba.'}</div></div>`;
   $('bArea').querySelectorAll('input').forEach(x => x.checked = false);
+  Object.keys(BKODE).forEach(k => delete BKODE[k]);
   const j2 = await api('adm_awal', {}, { diam: true });
-  if (j2.ok) { terapkanForm(j2.form); DATA.sesi = j2.ringkasan.sesi; gambarSesi(); }
-}
+  if (j2.ok) { terapkanForm(j2.form); DATA.sesi = j2.ringkasan.sesi; gambarSesi(); } else labelArea();
+};
 
 /* ---------- Periksa data ---------- */
 $('btnPeriksa').onclick = async () => {
@@ -686,6 +748,7 @@ function hitungAnalisis(p) {
     const jawab = p.map(x => String(x.j[i] || ''));
     const huruf = jawab.map(v => v.split('|')[0]), status = jawab.map(v => v.split('|')[1] || '');
     const teks = h => h.split(';').map(x => (s.pilihan.find(o => o.h === x) || {}).t || x).join(', ');
+    if (!s.dinilai && s.jenis !== 'Likert') return { s, i, anulir: true, salah: 0, n: 0, persen: null, kunciTeks: 'Dianulir (tidak dinilai)', salahTerbanyak: '', salahTerbanyakN: 0 };
     if (!s.dinilai) {
       const hit = {}; huruf.forEach(v => { if (v) hit[v] = (hit[v] || 0) + 1; });
       return { s, i, likert: true, hit, n: huruf.filter(Boolean).length };
@@ -815,6 +878,7 @@ async function detailPeserta(id) {
 }
 
 /* ---- Tab 3: Analisis soal ---- */
+const persenTeks = a => a.anulir ? 'Dianulir' : fmt(a.persen, 0) + '%';
 function topSalah(dn) { return dn.filter(a => a.n && a.salah > 0).sort((a, b) => b.persen - a.persen).slice(0, 5); }
 function judulTop(top) { return top.length ? `Top ${top.length} soal paling banyak dijawab salah` : 'Semua soal dijawab benar oleh semua peserta'; }
 function gambarAnalisis(f) {
@@ -831,7 +895,7 @@ function gambarAnalisis(f) {
     <div class="kartu"><div class="kepalaKartu"><h3 style="margin:0">Persentase salah per soal</h3>${tombolSalin('tbSoal')}</div>
       <div class="geser"><table id="tbSoal" class="kecilTabel"><tr><th>No</th><th>Topik</th><th style="width:28%">Menjawab salah</th><th>Jawaban benar</th><th>Jawaban salah terbanyak</th></tr>
       ${dn.map(a => `<tr><td>${a.i + 1}</td><td style="white-space:normal">${esc(a.s.topik || '—')}</td>
-        <td><div style="display:flex;align-items:center;gap:6px"><div class="trek merah"><div style="width:${a.persen}%"></div></div><span style="width:40px;text-align:right">${fmt(a.persen, 0)}%</span></div></td>
+        <td>${a.anulir ? '<span class="lencana l-Draf">Dianulir</span>' : `<div style="display:flex;align-items:center;gap:6px"><div class="trek merah"><div style="width:${a.persen}%"></div></div><span style="width:40px;text-align:right">${fmt(a.persen, 0)}%</span></div>`}</td>
         <td style="white-space:normal">${esc(a.kunciTeks)}</td><td style="white-space:normal">${esc(a.salahTerbanyak || '—')}</td></tr>`).join('')}</table></div></div>
     ${lk.length ? `<div class="kartu"><div class="kepalaKartu"><h3 style="margin:0">Rekap skala Likert</h3>${tombolSalin('tbLikert')}</div>
       <div class="geser"><table id="tbLikert" class="kecilTabel"><tr><th>No</th><th>Pernyataan</th>${skala.map(h => `<th>${esc((lk[0].s.pilihan.find(o => o.h === h) || {}).t || h)}</th>`).join('')}</tr>
@@ -1020,7 +1084,7 @@ $('ubExcel').onclick = async () => {
   }
   if (b.analisis) tambah('Analisis Soal', [[judulTop(d.top)], ...d.top.map((a, i) => [`${i + 1}. ${teksSalah(a)}. ${a.s.penjelasan || ''} Jawaban salah terbanyak: ${String(a.salahTerbanyak).replace(/\.+\s*$/, '')}.`]), [],
     ['No', 'Topik', 'Pertanyaan', '% Salah', 'Jumlah salah', 'Jawaban benar', 'Jawaban salah terbanyak', 'Penjelasan'],
-    ...d.dn.map(a => [a.i + 1, a.s.topik, a.s.teks, +a.persen.toFixed(2), a.salah, a.kunciTeks, a.salahTerbanyak, a.s.penjelasan]),
+    ...d.dn.map(a => [a.i + 1, a.s.topik, a.s.teks, (a.anulir ? 'Dianulir' : +a.persen.toFixed(2)), a.salah, a.kunciTeks, a.salahTerbanyak, a.s.penjelasan]),
     ...(d.lk.length ? [[], ['Rekap Likert'], ['No', 'Pernyataan', ...unik(d.lk.flatMap(a => a.s.pilihan.map(o => o.t)))],
       ...d.lk.map(a => [a.i + 1, a.s.teks, ...unik(d.lk.flatMap(x => x.s.pilihan.map(o => o.t))).map(t => { const o = a.s.pilihan.find(p => p.t === t); return o ? +pct(a.hit[o.h] || 0, a.n).toFixed(1) + '%' : ''; })])] : [])],
     [5, 28, 60, 9, 10, 36, 36, 50]);
@@ -1074,7 +1138,7 @@ $('ubPpt').onclick = async () => {
     s = pptx.addSlide(); judulSlide(s, judulTop(d.top));
     d.top.forEach((a, i) => {
       const y = 1.25 + i * 1.08;
-      s.addText(fmt(a.persen, 0) + '%', { x: 0.5, y, w: 1.4, h: 0.6, fontFace: HURUF, fontSize: 26, bold: true, color: MERAH });
+      s.addText(persenTeks(a), { x: 0.5, y, w: 1.4, h: 0.6, fontFace: HURUF, fontSize: 26, bold: true, color: MERAH });
       s.addText(`${a.salah} dari ${a.n}`, { x: 0.5, y: y + 0.55, w: 1.4, h: 0.3, fontFace: HURUF, fontSize: 10, color: ABU });
       s.addText([{ text: (a.s.topik || 'Soal ' + (a.i + 1)) + '\n', options: { bold: true, fontSize: 15, color: '1F2937' } },
         { text: (a.s.penjelasan || 'Jawaban benar: ' + a.kunciTeks) + '\n', options: { fontSize: 12, color: '1F2937' } },
@@ -1083,7 +1147,7 @@ $('ubPpt').onclick = async () => {
     });
     if (!d.top.length) s.addText('Tidak ada soal yang dijawab salah.', { x: 0.5, y: 1.3, w: 12, h: 0.5, fontFace: HURUF, fontSize: 16 });
     s = pptx.addSlide(); judulSlide(s, 'Persentase salah per soal');
-    tabel(s, ['No', 'Topik', '% salah', 'Jawaban benar'], d.dn.map(a => [a.i + 1, a.s.topik || '—', fmt(a.persen, 0) + '%', a.kunciTeks]), [0.7, 4.2, 1.4, 6]);
+    tabel(s, ['No', 'Topik', '% salah', 'Jawaban benar'], d.dn.map(a => [a.i + 1, a.s.topik || '—', persenTeks(a), a.kunciTeks]), [0.7, 4.2, 1.4, 6]);
   }
   if (b.temuan) {
     const kosong = !d.tem.temuan.length && !d.tem.rekomendasi.length;
@@ -1158,7 +1222,7 @@ $('ubWord').onclick = async () => {
   }
   if (b.analisis) {
     isi.push(H('Lampiran — persentase salah per soal', { pisah: true }));
-    isi.push(Tabel(['No', 'Topik', '% salah', 'Jawaban benar'], d.dn.map(a => [a.i + 1, a.s.topik || '—', fmt(a.persen, 0) + '%', a.kunciTeks]), [7, 33, 12, 48], { size: 18, kanan: [2] }));
+    isi.push(Tabel(['No', 'Topik', '% salah', 'Jawaban benar'], d.dn.map(a => [a.i + 1, a.s.topik || '—', persenTeks(a), a.kunciTeks]), [7, 33, 12, 48], { size: 18, kanan: [2] }));
   }
   if (b.rapot) {
     isi.push(H('Lampiran — rapot peserta', { pisah: !b.analisis }));
@@ -1187,75 +1251,10 @@ $('btnHapusBatch').onclick = async () => {
   await muatSesi(true); isiPilihanHapus();
 };
 
-/* =================== KOREKSI KUNCI (Langkah 6) =================== */
-let KOR = null;
-function siapkanKoreksi() {
-  const peta = {};
-  (DATA.sesi || []).forEach(s => { (peta[s.jabatan] = peta[s.jabatan] || []); if (!peta[s.jabatan].includes(s.batch)) peta[s.jabatan].push(s.batch); });
-  const lama = $('kJabatan').value;
-  $('kJabatan').innerHTML = Object.keys(peta).sort().map(j => `<option>${esc(j)}</option>`).join('');
-  if (lama && peta[lama]) $('kJabatan').value = lama;
-  const isiB = () => { $('kBatch').innerHTML = (peta[$('kJabatan').value] || []).map(b => `<option>${esc(b)}</option>`).join(''); };
-  $('kJabatan').onchange = isiB; isiB();
-}
-$('btnMuatKoreksi').onclick = async () => {
-  const j = await api('adm_soalKoreksi', { jabatan: $('kJabatan').value, batch: $('kBatch').value });
-  if (!j.ok) { alert(j.pesan); return; }
-  KOR = j; KOR.jabatan = $('kJabatan').value; KOR.batch = $('kBatch').value;
-  $('infoKoreksi').textContent = `${j.soal.length} soal · ${j.jumlahPeserta} peserta · ${j.sesi.length} sesi`;
-  gambarKoreksi();
-};
-function gambarKoreksi() {
-  const n = KOR.jumlahPeserta || 1;
-  $('daftarKoreksi').innerHTML = KOR.soal.map((s, k) => `<div class="kartu" id="kor_${k}">
-      <div class="kepalaKartu"><b>${s.urutan}. ${esc(s.topik || '')}</b><span class="kecil">${esc(s.id)} · ${esc(s.jenis)}</span></div>
-      <div style="margin-bottom:8px">${esc(s.teks)}</div>
-      <table class="kecilTabel" style="table-layout:fixed"><tr><th style="width:56px">Kunci</th><th>Pilihan</th><th style="width:110px">Dipilih</th><th style="width:28%"></th></tr>
-      ${s.pilihan.map(o => { const c = s.sebaran[o.h] || 0; return `<tr><td><input type="checkbox" class="kkCek" data-k="${k}" value="${o.h}" ${s.kunci.includes(o.h) ? 'checked' : ''}></td>
-        <td style="white-space:normal">${o.h}. ${esc(o.t)}</td><td>${c} (${fmt(pct(c, n), 1)}%)</td><td><div class="batang ${s.kunci.includes(o.h) ? '' : 'merah'}" style="width:${pct(c, n)}%"></div></td></tr>`; }).join('')}</table>
-      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <select class="kkNilai" data-k="${k}" style="width:auto;max-width:100%"><option value="1" ${s.dinilai ? 'selected' : ''}>Dinilai</option><option value="0" ${s.dinilai ? '' : 'selected'}>Tidak dinilai (dianulir, bobot dibagi ke soal lain)</option></select>
-        <button class="kecil" onclick="semuaBenar(${k})">Anggap semua pilihan benar (dianulir, semua dapat poin)</button>
-        <span class="kecil" id="kor_info_${k}"></span>
-      </div></div>`).join('') + (KOR.soal.length ? `<div class="kartu">
-      <label style="display:inline-flex;width:fit-content;gap:8px;align-items:center"><input type="checkbox" id="kkBank" checked> Terapkan juga ke <b>Bank Soal</b> (untuk sesi berikutnya)</label>
-      <div class="salah" id="salahKoreksi"></div><div class="berhasil" id="okKoreksi"></div>
-      <div style="margin-top:10px"><button class="utama" id="btnSimpanKoreksi">Simpan & hitung ulang nilai</button></div></div>` : '<div class="kartu kecil">Tidak ada soal yang dinilai.</div>');
-  document.querySelectorAll('.kkCek, .kkNilai').forEach(el => el.onchange = () => tandaiKoreksi(+el.dataset.k));
-  if ($('btnSimpanKoreksi')) $('btnSimpanKoreksi').onclick = simpanKoreksi;
-}
-function bacaKoreksi(k) {
-  return { id: KOR.soal[k].id, kunci: [...document.querySelectorAll(`.kkCek[data-k="${k}"]:checked`)].map(c => c.value).sort(),
-           dinilai: document.querySelector(`.kkNilai[data-k="${k}"]`).value === '1' };
-}
-function tandaiKoreksi(k) {
-  const s = KOR.soal[k], b = bacaKoreksi(k);
-  const beda = b.dinilai !== s.dinilai || b.kunci.join(';') !== s.kunci.slice().sort().join(';');
-  $('kor_' + k).style.borderColor = beda ? '#f39c12' : ''; $('kor_' + k).style.borderWidth = beda ? '2px' : '';
-  $('kor_info_' + k).textContent = beda ? 'Diubah: kunci ' + (b.dinilai ? (b.kunci.join(';') || '—') : 'tidak dinilai') : '';
-}
-function semuaBenar(k) { document.querySelectorAll(`.kkCek[data-k="${k}"]`).forEach(c => c.checked = true); document.querySelector(`.kkNilai[data-k="${k}"]`).value = '1'; tandaiKoreksi(k); }
-async function simpanKoreksi() {
-  const ubah = KOR.soal.map((s, k) => ({ s, b: bacaKoreksi(k) }))
-    .filter(x => x.b.dinilai !== x.s.dinilai || x.b.kunci.join(';') !== x.s.kunci.slice().sort().join(';')).map(x => x.b);
-  $('salahKoreksi').textContent = ''; $('okKoreksi').textContent = '';
-  if (!ubah.length) { $('salahKoreksi').textContent = 'Belum ada kunci yang diubah.'; return; }
-  const kosong = ubah.find(u => u.dinilai && !u.kunci.length);
-  if (kosong) { $('salahKoreksi').textContent = 'Soal ' + kosong.id + ': centang minimal satu jawaban benar, atau pilih "Tidak dinilai".'; return; }
-  if (!confirm(`Simpan koreksi ${ubah.length} soal dan hitung ulang nilai ${KOR.jumlahPeserta} peserta?`)) return;
-  const j = await api('adm_simpanKoreksi', { jabatan: KOR.jabatan, batch: KOR.batch, perubahan: ubah, keBank: $('kkBank').checked });
-  if (!j.ok) { $('salahKoreksi').textContent = j.pesan; return; }
-  alert(`Selesai. ${j.peserta} peserta dihitung ulang.\nStatus lulus berubah: ${j.berubah} (menjadi Lulus ${j.jadiLulus}, menjadi Tidak Lulus ${j.jadiTidak}).` + (j.keBank ? `\nBank Soal diperbarui: ${j.keBank} soal.` : ''));
-  LAP = null; $('btnMuatKoreksi').click();
-}
-
-/* =================== BANK SOAL & PAKET (Langkah 6b) =================== */
+/* =================== SOAL: soal aktif + bank soal + koreksi per batch =================== */
 const JENIS = ['Pilihan Ganda', 'Checklist', 'Likert', 'Uraian', 'Ya/Tidak', 'Checklist + Lainnya'];
 const HRF = 'ABCDEFGHIJ'.split('');
 const LIKERT_STD = ['Sangat Yakin / Paham', 'Yakin / Paham', 'Kurang Yakin / Paham', 'Tidak Yakin / Paham'];
-let BS = null;          // { jabatan, soal[], paket[] }
-let BSP = null;         // paket yang sedang diatur: { nama, lama, ids:Set } atau null
-let BSEdit = null;      // ID soal yang sedang diedit (null = soal baru)
 const JENIS_BAGIAN = { Evaluasi: ['Pilihan Ganda', 'Checklist', 'Likert'], Anonim: ['Uraian', 'Ya/Tidak', 'Checklist + Lainnya', 'Checklist', 'Pilihan Ganda'] };
 const KET_JENIS = {
   'Pilihan Ganda': 'Peserta memilih <b>satu</b> jawaban. Boleh mencentang lebih dari satu kunci bila beberapa jawaban dianggap benar.',
@@ -1265,13 +1264,16 @@ const KET_JENIS = {
   'Ya/Tidak': 'Peserta memilih Ya atau Tidak. Tidak perlu pilihan.',
   'Checklist + Lainnya': 'Peserta boleh memilih lebih dari satu, plus kotak "Lainnya" untuk menulis sendiri.'
 };
+let BS = null;          // { jabatan, soal[], batch[] }
+let BSTAB = 'aktif';
+let BSEdit = null;      // ID soal yang sedang diedit (null = soal baru)
+const KORB = {};        // data foto soal + sebaran per batch: KORB[jabatan|batch]
 function isiJenis(bagian, pilih) {
   const d = JENIS_BAGIAN[bagian] || JENIS_BAGIAN.Evaluasi;
   $('fJenis').innerHTML = d.map(j => `<option>${j}</option>`).join('');
   $('fJenis').value = d.includes(pilih) ? pilih : d[0];
 }
 isiJenis('Evaluasi');
-$('bsFJenis').innerHTML = '<option value="">Semua</option>' + JENIS.map(j => `<option>${j}</option>`).join('');
 
 function siapkanBank() {
   const daftar = (DATA.form && DATA.form.jabatan || []).map(j => j.nama);
@@ -1280,108 +1282,81 @@ function siapkanBank() {
   if (lama && daftar.includes(lama)) $('bsJabatan').value = lama;
   if (!BS || BS.jabatan !== $('bsJabatan').value) muatBank();
 }
-$('bsJabatan').onchange = () => { BSP = null; muatBank(); };
-$('bsMuat').onclick = () => muatBank();
-async function muatBank(pilihPaket) {
+$('bsJabatan').onchange = () => muatBank();
+$('bsTabAktif').onclick = () => pilihTabSoal('aktif');
+$('bsTabBank').onclick = () => pilihTabSoal('bank');
+function pilihTabSoal(t) { BSTAB = t; $('bsTabAktif').classList.toggle('aktif', t === 'aktif'); $('bsTabBank').classList.toggle('aktif', t === 'bank'); $('bsAlat').style.display = t === 'bank' ? 'flex' : 'none'; gambarBank(); }
+$('bsCari').oninput = () => gambarBank();
+$('bsSaring').onchange = () => gambarBank();
+async function muatBank() {
   const jab = $('bsJabatan').value; if (!jab) return;
   const j = await api('adm_soalBank', { jabatan: jab });
   if (!j.ok) { alert(j.pesan); return; }
-  BS = { jabatan: jab, soal: j.soal, paket: j.paket };
-  const p = pilihPaket !== undefined ? pilihPaket : (BSP ? BSP.lama : '');
-  isiPilihanPaket(p);
+  BS = { jabatan: jab, soal: j.soal, batch: j.batch || [] };
   gambarBank();
 }
-function isiPilihanPaket(pilih) {
-  const opsi = BS.paket.map(p => `<option value="${esc(p.nama)}">${esc(p.nama)} — ${p.ids.length} soal${p.sesi ? ' · dipakai ' + p.sesi + ' sesi' : ''}</option>`).join('');
-  $('bsPaket').innerHTML = '<option value="">— Tidak sedang mengatur paket —</option>' + opsi + '<option value="+">+ Buat paket baru…</option>';
-  $('bsFPaket').innerHTML = '<option value="">Semua</option><option value="-">Belum masuk paket mana pun</option>' + BS.paket.map(p => `<option>${esc(p.nama)}</option>`).join('');
-  if (pilih && BS.paket.some(p => p.nama === pilih)) { $('bsPaket').value = pilih; pilihPaket(pilih); }
-  else { $('bsPaket').value = ''; pilihPaket(''); }
+const batchBerjalan = () => BS && BS.batch.find(b => b.berjalan);
+function opsiSoal(s) {
+  const k = s['Dinilai'] === 'Ya' ? (s['Kunci'] || '').split(';') : [];
+  return HRF.filter(h => s['Pilihan ' + h]).map(h => k.includes(h)
+    ? `<span class="opsiBenar">✓ ${h}. ${esc(s['Pilihan ' + h])}</span>` : `<span>${h}. ${esc(s['Pilihan ' + h])}</span>`).join('');
 }
-$('bsPaket').onchange = () => pilihPaket($('bsPaket').value);
-function pilihPaket(v) {
-  $('bsSalahPaket').textContent = '';
-  if (!v) BSP = null;
-  else if (v === '+') BSP = { nama: '', lama: '', ids: new Set() };
-  else { const p = BS.paket.find(x => x.nama === v); BSP = { nama: p.nama, lama: p.nama, ids: new Set(p.ids), sesi: p.sesi }; }
-  $('bsPanelPaket').style.display = BSP ? '' : 'none';
-  if (BSP) {
-    $('bsNamaPaket').value = BSP.nama;
-    $('bsNamaPaket').disabled = !!BSP.sesi;
-    $('bsNamaPaket').title = BSP.sesi ? 'Paket sudah dipakai sesi: nama tidak bisa diganti' : '';
-    $('bsHapusPaket').style.display = BSP.lama ? '' : 'none';
-    $('bsSalinPaket').style.display = BSP.lama ? '' : 'none';
-  }
-  gambarBank();
+function ketSoal(s) {
+  if (s['Bagian'] === 'Anonim') return '(bagian anonim · ' + s['Jenis'] + ')';
+  if (s['Jenis'] === 'Likert') return '(skala pendapat, tidak dinilai)';
+  if (s['Dinilai'] !== 'Ya') return '(tidak dinilai)';
+  return s['Jenis'] === 'Checklist' ? '(boleh pilih lebih dari satu)' : '';
 }
-function hitungPaket() {
-  if (!BSP) return;
-  const dipilih = BS.soal.filter(s => BSP.ids.has(s['ID Soal']) && s['Bagian'] === 'Evaluasi');
-  const per = {}; dipilih.forEach(s => per[s['Jenis']] = (per[s['Jenis']] || 0) + 1);
-  const dinilai = dipilih.filter(s => s['Dinilai'] === 'Ya').length;
-  $('bsHitung').innerHTML = `<b>${dipilih.length}</b> soal dicentang (${dinilai} dinilai → bobot ${dinilai ? fmt(100 / dinilai) : '—'} per soal)` +
-    (dipilih.length ? ' · ' + Object.keys(per).map(k => `${esc(k)}: ${per[k]}`).join(' · ') : '') +
-    (BSP.sesi ? `<br><span style="color:#8a6100">Paket ini sudah dipakai ${BSP.sesi} sesi. Sesi yang sudah dimulai peserta tidak terpengaruh; sesi yang belum dimulai akan memakai isi baru.</span>` : '');
-}
-['bsCari', 'bsFBagian', 'bsFJenis', 'bsFPaket'].forEach(id => $(id).addEventListener(id === 'bsCari' ? 'input' : 'change', gambarBank));
+const ikonEdit = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
 function gambarBank() {
   if (!BS) return;
-  const cari = $('bsCari').value.trim().toLowerCase(), fb = $('bsFBagian').value, fj = $('bsFJenis').value, fp = $('bsFPaket').value;
-  const pk = s => s['Paket'] ? s['Paket'].split(';').map(x => x.trim()).filter(Boolean) : [];
-  const tampil = BS.soal.filter(s => (!fb || s['Bagian'] === fb) && (!fj || s['Jenis'] === fj)
-    && (!fp || (fp === '-' ? !pk(s).length : pk(s).includes(fp)))
-    && (!cari || (s['ID Soal'] + ' ' + s['Topik'] + ' ' + s['Pertanyaan']).toLowerCase().includes(cari)));
-  const ev = BS.soal.filter(s => s['Bagian'] === 'Evaluasi'), an = BS.soal.length - ev.length;
-  $('bsInfo').textContent = `${BS.jabatan}: ${ev.length} soal evaluasi (${ev.filter(s => s['Dinilai'] === 'Ya').length} dinilai) · ${an} soal anonim` + (tampil.length !== BS.soal.length ? ` · ditampilkan ${tampil.length}` : '');
-  const kolomCek = !!BSP;
-  $('bsTabel').innerHTML = `<tr>${kolomCek ? '<th style="width:40px">Paket</th>' : ''}<th style="width:44px">No</th><th style="width:96px">ID</th><th style="width:120px">Jenis</th><th>Pertanyaan</th><th style="width:70px">Kunci</th><th style="width:150px">Paket</th><th style="width:120px"></th></tr>` +
-    (tampil.length ? tampil.map(s => {
-      const id = s['ID Soal'], anon = s['Bagian'] === 'Anonim';
-      const pil = HRF.filter(h => s['Pilihan ' + h]);
-      return `<tr${anon ? ' style="background:#fafbfc"' : ''}>
-        ${kolomCek ? `<td>${anon ? '<span class="kecil" title="Selalu ikut">auto</span>' : `<input type="checkbox" class="bsCek" value="${esc(id)}" ${BSP.ids.has(id) ? 'checked' : ''}>`}</td>` : ''}
-        <td>${s['Urutan'] || ''}</td><td class="kecil">${esc(id)}${anon ? '<br><span class="lencana l-Draf">Anonim</span>' : ''}</td>
-        <td class="kecil">${esc(s['Jenis'])}${s['Dinilai'] === 'Ya' ? '' : '<br>(tidak dinilai)'}</td>
-        <td style="white-space:normal">${s['Topik'] ? `<div class="kecil"><b>${esc(s['Topik'])}</b></div>` : (s['Dinilai'] === 'Ya' ? '<div class="kecil" style="color:#8a6100">⚠ topik kosong</div>' : '')}
-          ${esc(s['Pertanyaan'])}
-          ${pil.length ? `<div class="kecil" style="margin-top:4px">${pil.map(h => `<span style="${(s['Kunci'] || '').split(';').includes(h) && s['Dinilai'] === 'Ya' ? 'color:var(--hijau);font-weight:600' : ''}">${h}. ${esc(s['Pilihan ' + h])}</span>`).join(' &nbsp;·&nbsp; ')}</div>` : ''}</td>
-        <td><b>${s['Dinilai'] === 'Ya' ? esc(s['Kunci']) : '—'}</b></td>
-        <td class="kecil">${pk(s).map(esc).join('<br>') || '—'}</td>
-        <td style="white-space:nowrap"><button class="kecil" onclick="bukaFormSoal('${esc(id)}')">Edit</button> <button class="kecil bahaya" onclick="hapusSoal('${esc(id)}')">Hapus</button></td></tr>`;
-    }).join('') : `<tr><td colspan="8" class="kecil">Tidak ada soal${BS.soal.length ? ' yang cocok dengan saringan' : '. Tekan "+ Soal baru" atau upload Excel'}.</td></tr>`);
-  document.querySelectorAll('.bsCek').forEach(c => c.onchange = () => { c.checked ? BSP.ids.add(c.value) : BSP.ids.delete(c.value); hitungPaket(); });
-  hitungPaket();
+  const aktif = BS.soal.filter(s => s['Aktif'] === 'Ya');
+  const ev = aktif.filter(s => s['Bagian'] === 'Evaluasi'), dn = ev.filter(s => s['Dinilai'] === 'Ya').length;
+  $('bsNAktif').textContent = '(' + aktif.length + ')'; $('bsNBank').textContent = '(' + BS.soal.length + ')';
+  const b = batchBerjalan();
+  $('bsInfoBatch').innerHTML = b
+    ? `<div class="infoBiru"><b>Batch berjalan: ${esc(b.batch)}</b> — memakai foto soal yang diambil saat peserta pertama menekan Mulai (${b.selesai} peserta selesai${b.proses ? ', ' + b.proses + ' sedang mengerjakan' : ''}). Mengaktifkan / menonaktifkan soal sekarang baru berlaku untuk <b>batch berikutnya</b>. Untuk memperbaiki soal di batch ini, buka ✏️ Edit soal.</div>`
+    : `<div class="infoBiru">Belum ada batch ${esc(BS.jabatan)} yang berjalan. Soal aktif akan "difoto" saat peserta pertama batch berikutnya menekan Mulai, lalu dipakai seluruh sesi di batch itu.</div>`;
+  let daftar;
+  if (BSTAB === 'aktif') {
+    daftar = aktif.slice().sort((a, b) => (a['Bagian'] === b['Bagian'] ? 0 : a['Bagian'] === 'Evaluasi' ? -1 : 1) || (a['Jenis'] === 'Likert') - (b['Jenis'] === 'Likert') || a['Urutan'] - b['Urutan']);
+    $('bsInfo').innerHTML = `<b>${ev.length} soal aktif</b> · ${dn} dinilai${dn ? ' (bobot ' + fmt(100 / dn) + ' per soal)' : ''} · ${ev.length - dn} tidak dinilai${aktif.length - ev.length ? ' · ' + (aktif.length - ev.length) + ' soal anonim' : ''}`;
+    $('bsKet').textContent = 'Hijau = jawaban benar. Urutan ini untuk laporan; peserta tetap mendapat soal acak.';
+    let bagianLalu = '';
+    $('bsDaftar').innerHTML = daftar.map((s, i) => {
+      const judul = s['Bagian'] !== bagianLalu ? (bagianLalu = s['Bagian'], s['Bagian'] === 'Anonim' ? '<div class="pemisahSoal">Bagian anonim</div>' : '') : '';
+      return judul + `<div class="barisSoal"><div class="noSoal">${i + 1}</div>
+        <div><div class="teksSoal">${esc(s['Pertanyaan'])} <span class="kecil">${esc(ketSoal(s))}</span></div>
+          <div class="opsiSoal">${opsiSoal(s)}</div><div class="kecil">${esc(s['Topik'] || (s['Dinilai'] === 'Ya' ? '⚠ topik kosong' : ''))}</div></div>
+        <div style="display:flex;gap:6px"><button class="ikon" aria-label="Edit soal" title="Edit" onclick="bukaFormSoal('${esc(s['ID Soal'])}')">${ikonEdit}</button>
+          <button class="ikon bahaya" aria-label="Nonaktifkan soal" title="Nonaktifkan (tetap tersimpan di Bank soal)" onclick="aturAktif(['${esc(s['ID Soal'])}'], false)">–</button></div></div>`;
+    }).join('') || '<div class="kecil" style="padding:14px 0">Belum ada soal aktif. Buka tab Bank soal untuk mengaktifkan, atau tekan "+ Soal baru".</div>';
+  } else {
+    const q = $('bsCari').value.trim().toLowerCase(), f = $('bsSaring').value;
+    daftar = BS.soal.filter(s => (!f || s['Aktif'] === f) && (!q || (s['Pertanyaan'] + ' ' + s['Topik']).toLowerCase().includes(q)));
+    $('bsInfo').innerHTML = `<b>${BS.soal.length} soal</b> di bank ${esc(BS.jabatan)} · <span style="color:var(--hijau);font-weight:600">${aktif.length} aktif</span> · ${BS.soal.length - aktif.length} tidak aktif${daftar.length !== BS.soal.length ? ' · ditampilkan ' + daftar.length : ''}`;
+    $('bsKet').textContent = 'Geser sakelar untuk mengaktifkan / menonaktifkan (tersimpan otomatis).';
+    $('bsDaftar').innerHTML = daftar.map(s => `<div class="barisBank">
+        <div><div>${esc(s['Pertanyaan'])} <span class="kecil">${esc(ketSoal(s))}</span></div><div class="kecil">${esc(s['Topik'] || '')}</div></div>
+        <label class="sakelar"><input type="checkbox" ${s['Aktif'] === 'Ya' ? 'checked' : ''} onchange="aturAktif(['${esc(s['ID Soal'])}'], this.checked)"><span class="trekSakelar"></span><span class="kecil">${s['Aktif'] === 'Ya' ? 'Aktif' : 'Tidak aktif'}</span></label>
+        <button class="ikon" aria-label="Edit soal" title="Edit" onclick="bukaFormSoal('${esc(s['ID Soal'])}')">${ikonEdit}</button></div>`).join('')
+      || `<div class="kecil" style="padding:14px 0">Tidak ada soal${BS.soal.length ? ' yang cocok' : '. Tekan "+ Soal baru" atau upload Excel'}.</div>`;
+  }
 }
-$('bsCentangSemua').onclick = () => { BS.soal.filter(s => s['Bagian'] === 'Evaluasi').forEach(s => BSP.ids.add(s['ID Soal'])); gambarBank(); };
-$('bsKosongkan').onclick = () => { BSP.ids.clear(); gambarBank(); };
-async function simpanPaketBS(nama, lama) {
-  $('bsSalahPaket').textContent = '';
-  const ids = [...BSP.ids].filter(id => BS.soal.some(s => s['ID Soal'] === id && s['Bagian'] === 'Evaluasi'));
-  if (!nama) { $('bsSalahPaket').textContent = 'Nama paket wajib diisi.'; return; }
-  if (!ids.length) { $('bsSalahPaket').textContent = 'Centang minimal satu soal.'; return; }
-  const j = await api('adm_simpanPaketSoal', { jabatan: BS.jabatan, nama, namaLama: lama, ids });
-  if (!j.ok) { $('bsSalahPaket').textContent = j.pesan; return; }
-  BSP = null; await muatBank(nama); muatForm(true);
-  alert(`Paket "${nama}" tersimpan: ${j.jumlah} soal (+ soal anonim otomatis).`);
+async function aturAktif(ids, aktif) {
+  BS.soal.forEach(s => { if (ids.includes(s['ID Soal'])) s['Aktif'] = aktif ? 'Ya' : 'Tidak'; });
+  gambarBank();
+  const j = await api('adm_aturAktif', { ids, aktif }, { diam: true });
+  if (!j.ok) { alert(j.pesan); await muatBank(); return; }
+  muatForm(true);
 }
-$('bsSimpanPaket').onclick = () => simpanPaketBS($('bsNamaPaket').value.trim(), BSP.lama);
-$('bsSalinPaket').onclick = () => {
-  const nama = prompt('Nama paket baru (isi soal disalin dari "' + BSP.lama + '"):', BSP.lama + ' (salinan)');
-  if (nama) simpanPaketBS(nama.trim(), '');
-};
-$('bsHapusPaket').onclick = async () => {
-  if (!confirm(`Hapus paket "${BSP.lama}"? Soalnya tidak ikut terhapus, hanya label paketnya.`)) return;
-  const j = await api('adm_hapusPaketSoal', { jabatan: BS.jabatan, nama: BSP.lama });
-  if (!j.ok) { $('bsSalahPaket').textContent = j.pesan; return; }
-  BSP = null; await muatBank(''); muatForm(true);
-};
 
 /* ---- Formulir soal ---- */
 function barisPilihan(teks, kunci) {
   const d = document.createElement('div');
-  d.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:6px';
-  d.innerHTML = `<label class="fKunciL" style="display:flex;gap:3px;align-items:center;font-size:12px;color:var(--hijau);width:58px"><input type="checkbox" class="fKunci" ${kunci ? 'checked' : ''}>benar</label><b class="fHuruf" style="width:18px"></b>
-    <input type="text" class="fTeks" style="flex:1"><button class="kecil bahaya" title="Hapus pilihan">✕</button>`;
+  d.className = 'barisPilihan';
+  d.innerHTML = `<label class="fKunciL"><input type="checkbox" class="fKunci" ${kunci ? 'checked' : ''}>benar</label><b class="fHuruf"></b>
+    <input type="text" class="fTeks" aria-label="Teks pilihan"><span class="fSebaran"></span><button class="kecil bahaya" type="button" aria-label="Hapus pilihan">✕</button>`;
   d.querySelector('.fTeks').value = teks || '';
   if (!teks && BSEdit) d.querySelector('.fTeks').placeholder = 'pilihan ini kosong / belum terekam — isi, atau hapus dengan ✕';
   d.querySelector('button').onclick = () => { d.remove(); hurufUlang(); };
@@ -1390,14 +1365,15 @@ function barisPilihan(teks, kunci) {
 function hurufUlang() {
   [...$('fPilihan').children].forEach((d, i) => d.querySelector('.fHuruf').textContent = HRF[i] + '.');
   $('fTambahPilihan').disabled = $('fPilihan').children.length >= 10;
+  tampilSebaran();
 }
 $('fTambahPilihan').onclick = () => { barisPilihan('', false); aturTampilanForm(); };
-$('fIsiLikert').onclick = () => { $('fPilihan').innerHTML = ''; LIKERT_STD.forEach(t => barisPilihan(t, false)); };
+$('fIsiLikert').onclick = () => { $('fPilihan').innerHTML = ''; LIKERT_STD.forEach(t => barisPilihan(t, false)); aturTampilanForm(); };
 let _bisaNilaiLalu = null;
 function aturTampilanForm() {
   const jenis = $('fJenis').value, anon = $('fBagian').value === 'Anonim';
   const bisaNilai = !anon && ['Pilihan Ganda', 'Checklist'].includes(jenis);
-  if (bisaNilai && _bisaNilaiLalu === false) $('fDinilai').value = 'Ya';   // pindah dari Likert/Uraian ke soal bernilai
+  if (bisaNilai && _bisaNilaiLalu === false) $('fDinilai').value = 'Ya';
   _bisaNilaiLalu = bisaNilai;
   $('fKetJenis').innerHTML = KET_JENIS[jenis] || '';
   const pakaiPilihan = !['Uraian', 'Ya/Tidak'].includes(jenis);
@@ -1405,42 +1381,98 @@ function aturTampilanForm() {
   $('fBlokNilai').style.display = bisaNilai ? '' : 'none';
   if (!bisaNilai) $('fDinilai').value = 'Tidak';
   const nilai = $('fDinilai').value === 'Ya';
-  document.querySelectorAll('.fKunciL').forEach(c => c.style.display = nilai ? 'flex' : 'none');
+  document.querySelectorAll('.fKunciL').forEach(c => c.style.visibility = nilai ? 'visible' : 'hidden');
   $('fPetunjukKunci').style.display = nilai ? '' : 'none';
   $('fIsiLikert').style.display = jenis === 'Likert' ? '' : 'none';
   const teksNow = [...document.querySelectorAll('.fTeks')].map(x => x.value.trim());
   const kosongSemua = teksNow.every(t => !t), likertStd = teksNow.join('|') === LIKERT_STD.join('|');
   if (pakaiPilihan && ((jenis === 'Likert' && kosongSemua) || (jenis !== 'Likert' && likertStd))) $('fPilihan').innerHTML = '';
   if (pakaiPilihan && !$('fPilihan').children.length) {
-    if (jenis === 'Likert') LIKERT_STD.forEach(t => barisPilihan(t, false));
-    else for (let i = 0; i < 4; i++) barisPilihan('', false);
+    if (jenis === 'Likert') LIKERT_STD.forEach(t => barisPilihan(t, false)); else for (let i = 0; i < 4; i++) barisPilihan('', false);
+    aturTampilanForm();
   }
 }
-['fJenis', 'fDinilai'].forEach(id => $(id).onchange = aturTampilanForm);
+['fJenis', 'fDinilai'].forEach(id => $(id).addEventListener('change', aturTampilanForm));
 $('fBagian').onchange = () => { isiJenis($('fBagian').value, $('fJenis').value); aturTampilanForm(); };
+
+// Batch yang foto soalnya memuat soal ini
+let FB = null;   // { batch, info, soalBatch (versi foto), jumlahPeserta }
+async function siapkanBatchForm(id) {
+  $('fBatch').innerHTML = ''; $('fPilihBatch').innerHTML = ''; FB = null;
+  if (!id || !BS.batch.length) return;
+  const daftar = [];
+  for (const b of BS.batch) {
+    const k = BS.jabatan + '|' + b.batch;
+    if (!KORB[k]) { const j = await api('adm_soalKoreksi', { jabatan: BS.jabatan, batch: b.batch }, { diam: true }); if (j.ok) KORB[k] = j; else continue; }
+    const s = KORB[k].soal.find(x => x.id === id);
+    if (s) daftar.push({ b, s, n: KORB[k].jumlahPeserta });
+  }
+  if (!daftar.length || BSEdit !== id) return;
+  $('fPilihBatch').innerHTML = `Sebaran dari batch <select id="fBatchPilih" style="width:auto;padding:4px 6px">${daftar.map((x, i) => `<option value="${i}">${esc(x.b.batch)} (${x.n} peserta)${x.b.berjalan ? ' · berjalan' : ''}</option>`).join('')}</select>`;
+  const pilih = () => { const x = daftar[+$('fBatchPilih').value]; FB = { batch: x.b.batch, info: x.b, soalBatch: x.s, n: x.n }; gambarBatchForm(); tampilSebaran(); };
+  $('fBatchPilih').onchange = pilih; pilih();
+}
+function tampilSebaran() {
+  const rows = [...$('fPilihan').children];
+  $('fPetunjukSebaran').textContent = FB ? ' · angka kanan = % peserta yang memilih' : '';
+  rows.forEach((d, i) => {
+    const el = d.querySelector('.fSebaran'); if (!el) return;
+    if (!FB) { el.innerHTML = ''; return; }
+    const c = FB.soalBatch.sebaran[HRF[i]] || 0, p = pct(c, FB.n), benar = FB.soalBatch.kunci.includes(HRF[i]);
+    el.innerHTML = `<span class="trek ${benar ? '' : 'merah'}"><span style="display:block;height:8px;border-radius:4px;width:${Math.min(100, p)}%"></span></span><span style="width:40px;text-align:right">${fmt(p, 0)}%</span>`;
+  });
+}
+function gambarBatchForm() {
+  if (!FB) { $('fBatch').innerHTML = ''; return; }
+  const b = FB.info, terkunci = b.selesai > 0;
+  $('fBatch').innerHTML = `<div class="kotakBatch">
+    <b>Soal ini ${b.berjalan ? 'sedang dipakai batch berjalan' : 'dipakai batch'} ${esc(b.batch)} (${b.selesai} peserta selesai).</b>
+    <div>Perubahan di atas otomatis berlaku untuk bank soal / batch berikutnya. Untuk batch ${esc(b.batch)}, pilih tindakan:</div>
+    <label><input type="radio" name="fTindakan" value="tidak" checked> <span>Jangan ubah batch ini (hanya untuk batch berikutnya)</span></label>
+    <label><input type="radio" name="fTindakan" value="kunci"> <span><b>Ubah kunci & hitung ulang nilai</b> semua peserta batch ini</span></label>
+    <label><input type="radio" name="fTindakan" value="teks"> <span><b>Perbaiki salah ketik</b> pada pertanyaan / pilihan (nilai tidak berubah, tercatat siapa &amp; kapan)</span></label>
+    <label><input type="radio" name="fTindakan" value="anulir"> <span><b>Anulir</b> — tidak dinilai di batch ini, bobot dibagi ke soal lain; di laporan ditandai "Dianulir"</span></label>
+    ${FB.soalBatch.dinilai ? '' : '<div class="kecil">Status di batch ini: <b>sudah dianulir / tidak dinilai</b>. Pilih "Ubah kunci" untuk menilainya kembali.</div>'}
+    <div class="garisAtas"><button type="button" class="kecil" id="fAmbilUlang" ${terkunci ? 'disabled' : ''}>↻ Ambil ulang soal batch</button>
+      <span class="kecil">${terkunci ? 'Terkunci: sudah ada peserta yang mengirim jawaban. Hanya bisa dipakai bila belum ada yang selesai.' : 'Belum ada peserta yang selesai: foto soal batch bisa diambil ulang dari soal aktif terbaru (yang sedang mengerjakan diminta mulai ulang).'}</span></div>
+  </div>`;
+  if (!terkunci) $('fAmbilUlang').onclick = async () => {
+    if (!confirm(`Ambil ulang soal batch ${b.batch}?\n\nFoto soal batch dihapus dan diambil ulang dari soal AKTIF saat peserta berikutnya menekan Mulai. Peserta yang sedang mengerjakan dibatalkan dan perlu memuat ulang halaman untuk mulai lagi (waktu 45 menit dari awal).\n\nPastikan soal aktif sudah diperbaiki lebih dulu.`)) return;
+    const j = await api('adm_ambilUlangBatch', { jabatan: BS.jabatan, batch: b.batch });
+    if (!j.ok) { alert(j.pesan); return; }
+    delete KORB[BS.jabatan + '|' + b.batch];
+    alert(`Selesai. ${j.dibatalkan} pengerjaan dibatalkan. Minta peserta tersebut memuat ulang halaman.`);
+    $('bsJendela').style.display = 'none'; muatBank();
+  };
+}
 function bukaFormSoal(id) {
   const s = id ? BS.soal.find(x => x['ID Soal'] === id) : null;
-  BSEdit = id || null;
-  $('bsJudulForm').textContent = s ? 'Edit soal ' + id : 'Soal baru — ' + BS.jabatan;
-  $('fBagian').value = s ? s['Bagian'] : ($('bsFBagian').value || 'Evaluasi');
+  BSEdit = id || null; FB = null;
+  $('bsJudulForm').textContent = s ? 'Edit soal' : 'Soal baru — ' + BS.jabatan;
+  $('fBagian').value = s ? s['Bagian'] : 'Evaluasi';
   isiJenis($('fBagian').value, s ? s['Jenis'] : 'Pilihan Ganda');
-  if (s && $('fJenis').value !== s['Jenis']) $('fJenis').insertAdjacentHTML('beforeend', `<option>${esc(s['Jenis'])}</option>`), $('fJenis').value = s['Jenis'];
+  if (s && $('fJenis').value !== s['Jenis']) { $('fJenis').insertAdjacentHTML('beforeend', `<option>${esc(s['Jenis'])}</option>`); $('fJenis').value = s['Jenis']; }
   _bisaNilaiLalu = null;
   $('fUrutan').value = s ? s['Urutan'] || '' : '';
-  $('fId').value = s ? id : ''; $('fId').disabled = !!s;
   $('fTopik').value = s ? s['Topik'] : ''; $('fTanya').value = s ? s['Pertanyaan'] : ''; $('fJelas').value = s ? s['Penjelasan'] : '';
   $('fDinilai').value = s ? s['Dinilai'] : 'Ya';
+  $('fAktif').checked = s ? s['Aktif'] === 'Ya' : true;
   $('fPilihan').innerHTML = '';
-  if (s) {
-    const k = (s['Kunci'] || '').split(';'), akhir = HRF.reduce((m, h, i) => s['Pilihan ' + h] ? i : m, -1);
-    HRF.slice(0, akhir + 1).forEach(h => barisPilihan(s['Pilihan ' + h], k.includes(h)));
-  }
-  $('fSalah').textContent = '';
+  if (s) { const k = (s['Kunci'] || '').split(';'), akhir = HRF.reduce((m, h, i) => s['Pilihan ' + h] ? i : m, -1); HRF.slice(0, akhir + 1).forEach(h => barisPilihan(s['Pilihan ' + h], k.includes(h))); }
+  $('fSalah').textContent = ''; $('fHapus').style.display = s ? '' : 'none';
   aturTampilanForm();
   $('bsJendela').style.display = 'block'; $('fTanya').focus();
+  siapkanBatchForm(id);
 }
 $('bsBaru').onclick = () => { if (BS) bukaFormSoal(null); };
-$('fBatal').onclick = () => { $('bsJendela').style.display = 'none'; };
+$('fBatal').onclick = $('fTutup').onclick = () => { $('bsJendela').style.display = 'none'; };
+$('fHapus').onclick = async () => {
+  const s = BS.soal.find(x => x['ID Soal'] === BSEdit); if (!s) return;
+  if (!confirm(`Hapus soal ini dari bank soal secara permanen?\n\n"${s['Pertanyaan'].slice(0, 120)}"\n\nBatch yang sudah berjalan tidak terpengaruh (memakai foto soal). Bila hanya ingin tidak dipakai, cukup nonaktifkan.`)) return;
+  const j = await api('adm_hapusSoal', { ids: [BSEdit] });
+  if (!j.ok) { alert(j.pesan); return; }
+  $('bsJendela').style.display = 'none'; await muatBank(); muatForm(true);
+};
 $('fSimpan').onclick = async () => {
   const jenis = $('fJenis').value, pakaiPilihan = !['Uraian', 'Ya/Tidak'].includes(jenis);
   const baris = pakaiPilihan ? [...$('fPilihan').children].map(d => ({ t: d.querySelector('.fTeks').value.trim(), k: d.querySelector('.fKunci').checked })) : [];
@@ -1449,23 +1481,36 @@ $('fSimpan').onclick = async () => {
   if (baris.some(b => !b.t)) { $('fSalah').textContent = 'Ada pilihan jawaban yang masih kosong. Isi atau hapus (✕).'; return; }
   const nilai = $('fDinilai').value === 'Ya';
   if (nilai && !baris.some(b => b.k)) { $('fSalah').textContent = 'Centang minimal satu jawaban yang benar.'; return; }
-  const soal = { 'ID Soal': $('fId').value.trim(), 'Urutan': $('fUrutan').value, 'Jabatan': BS.jabatan, 'Bagian': $('fBagian').value, 'Jenis': jenis,
+  const soal = { 'ID Soal': BSEdit || '', 'Urutan': $('fUrutan').value, 'Jabatan': BS.jabatan, 'Bagian': $('fBagian').value, 'Jenis': jenis,
     'Topik': $('fTopik').value.trim(), 'Pertanyaan': $('fTanya').value.trim(), 'Dinilai': nilai ? 'Ya' : 'Tidak', 'Penjelasan': $('fJelas').value.trim(),
-    'Kunci': nilai ? baris.map((b, i) => b.k ? HRF[i] : '').filter(Boolean).join(';') : '' };
+    'Kunci': nilai ? baris.map((b, i) => b.k ? HRF[i] : '').filter(Boolean).join(';') : '', 'Aktif': $('fAktif').checked ? 'Ya' : 'Tidak' };
   HRF.forEach((h, i) => soal['Pilihan ' + h] = baris[i] ? baris[i].t : '');
-  if (!BSEdit && BSP && BSP.lama && soal['Bagian'] === 'Evaluasi' && confirm(`Masukkan soal baru ini ke paket "${BSP.lama}" juga?`)) soal['Paket'] = BSP.lama;
+  const tindakan = FB ? (document.querySelector('input[name=fTindakan]:checked') || {}).value : 'tidak';
+  if (FB && tindakan !== 'tidak' && tindakan !== 'anulir') {
+    const nFoto = FB.soalBatch.pilihan.length;
+    if (baris.length !== nFoto) { $('fSalah').textContent = `Jumlah pilihan berubah (${nFoto} → ${baris.length}). Untuk batch berjalan pilih "Anulir" atau "Jangan ubah batch ini".`; return; }
+    if (tindakan === 'kunci' && !nilai) { $('fSalah').textContent = 'Untuk "Ubah kunci", soal harus Dinilai = Ya. Gunakan "Anulir" bila tidak ingin dinilai.'; return; }
+  }
+  if (FB && tindakan !== 'tidak') {
+    const teksT = { kunci: `mengubah kunci menjadi ${soal['Kunci']} dan menghitung ulang nilai ${FB.n} peserta`, teks: 'memperbaiki teks soal', anulir: `menganulir soal ini (nilai ${FB.n} peserta dihitung ulang)` }[tindakan];
+    if (!confirm(`Simpan perubahan, lalu ${teksT} di batch ${FB.batch}?`)) return;
+  }
   const j = await api('adm_simpanSoal', { soal, idLama: BSEdit });
   if (!j.ok) { $('fSalah').textContent = j.pesan; return; }
+  let pesan = '';
+  if (FB && tindakan === 'kunci' || FB && tindakan === 'anulir') {
+    const k = await api('adm_simpanKoreksi', { jabatan: BS.jabatan, batch: FB.batch, keBank: false,
+      perubahan: [{ id: j.id, kunci: tindakan === 'anulir' ? FB.soalBatch.kunci : soal['Kunci'].split(';').filter(Boolean), dinilai: tindakan !== 'anulir' }] });
+    pesan = k.ok ? `Batch ${FB.batch}: ${k.peserta} peserta dihitung ulang, status lulus berubah ${k.berubah} (jadi lulus ${k.jadiLulus}, jadi tidak lulus ${k.jadiTidak}).` : 'Soal tersimpan, tetapi koreksi batch gagal: ' + k.pesan;
+  } else if (FB && tindakan === 'teks') {
+    const k = await api('adm_perbaikiTeksBatch', { jabatan: BS.jabatan, batch: FB.batch, id: j.id, soal });
+    pesan = k.ok ? `Teks soal di batch ${FB.batch} diperbaiki.` : 'Soal tersimpan, tetapi perbaikan teks batch gagal: ' + k.pesan;
+  }
+  if (FB) { delete KORB[BS.jabatan + '|' + FB.batch]; LAP = null; }
   $('bsJendela').style.display = 'none';
-  await muatBank();
+  await muatBank(); muatForm(true);
+  if (pesan) alert(pesan);
 };
-async function hapusSoal(id) {
-  const s = BS.soal.find(x => x['ID Soal'] === id);
-  if (!confirm(`Hapus soal ${id}?\n\n"${s['Pertanyaan'].slice(0, 120)}"\n\nSesi yang sudah berjalan tidak terpengaruh.`)) return;
-  const j = await api('adm_hapusSoal', { ids: [id] });
-  if (!j.ok) { alert(j.pesan); return; }
-  await muatBank();
-}
 
 /* ---- Unduh & upload Excel ---- */
 async function siapXlsx() {
@@ -1480,7 +1525,7 @@ $('bsUnduh').onclick = async () => {
   if (!j.ok) { alert(j.pesan); return; }
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet([j.kolom].concat(j.baris));
-  ws['!cols'] = j.kolom.map(k => ({ wch: k === 'Pertanyaan' || k === 'Penjelasan' ? 60 : k.startsWith('Pilihan') ? 28 : k === 'Topik' || k === 'Paket' ? 24 : 12 }));
+  ws['!cols'] = j.kolom.map(k => ({ wch: k === 'Pertanyaan' || k === 'Penjelasan' ? 60 : k.startsWith('Pilihan') ? 28 : k === 'Topik' ? 24 : 12 }));
   XLSX.utils.book_append_sheet(wb, ws, 'Bank Soal');
   const pet = [['PETUNJUK MENGISI'], [''],
     ['ID Soal', 'Kosongkan untuk soal baru (dibuat otomatis). Jangan ubah ID soal lama bila ingin memperbaruinya.'],
@@ -1491,7 +1536,7 @@ $('bsUnduh').onclick = async () => {
     ['Pilihan A–J', 'Isi berurutan mulai A. Uraian dan Ya/Tidak tidak perlu pilihan.'],
     ['Kunci', 'Huruf jawaban benar. Lebih dari satu pisahkan dengan titik koma, mis. A;C'],
     ['Dinilai', 'Ya (hanya Pilihan Ganda / Checklist bagian Evaluasi) atau Tidak'],
-    ['Paket', 'Nama paket. Lebih dari satu pisahkan dengan titik koma, mis. Kasir 2027 B1; Kasir 2027 B2']];
+    ['Aktif', 'Ya = dipakai untuk batch berikutnya, Tidak = disimpan di bank saja. Kosong dianggap Ya.']];
   const wp = XLSX.utils.aoa_to_sheet(pet); wp['!cols'] = [{ wch: 14 }, { wch: 100 }];
   XLSX.utils.book_append_sheet(wb, wp, 'Petunjuk');
   XLSX.writeFile(wb, 'Bank Soal ' + (semua ? 'Semua Jabatan' : BS.jabatan) + '.xlsx');
@@ -1533,7 +1578,7 @@ async function kirimUpload(cekSaja) {
   if (!cekSaja) {
     $('bsKartuUpload').innerHTML = `<div class="berhasil" style="font-size:15px">✓ Tersimpan: ${j.baru} soal baru, ${j.ubah} diubah${j.hilang ? ', ' + j.hilang + ' dihapus' : ''}.</div>
       <button class="kecil" style="margin-top:8px" onclick="$('bsKartuUpload').style.display='none'">Tutup</button>`;
-    BSP = null; await muatBank(); muatForm(true); return;
+    await muatBank(); muatForm(true); return;
   }
   const m = j.bermasalah;
   $('bsHasilCek').innerHTML = `<div class="panel"><b>Pratinjau</b> (jabatan di file: ${j.jabatan.map(esc).join(', ')})
@@ -1614,16 +1659,14 @@ $('ubMulai').onclick = async () => {
 /* ---- Bank Soal → Word (soal lalu kunci di halaman terakhir) ---- */
 $('bsUnduhWord').onclick = async () => {
   if (!BS) return;
-  const paket = $('bsFPaket').value && $('bsFPaket').value !== '-' ? $('bsFPaket').value : '';
-  const pk = s => s['Paket'] ? s['Paket'].split(';').map(x => x.trim()) : [];
-  let soal = BS.soal.filter(s => s['Bagian'] === 'Evaluasi' && (!paket || pk(s).includes(paket)));
-  if (!soal.length) { alert('Tidak ada soal evaluasi' + (paket ? ' di paket "' + paket + '"' : '') + '.'); return; }
-  if (!confirm(`Unduh ${soal.length} soal ${BS.jabatan}${paket ? ' (paket "' + paket + '")' : ' (semua soal)'} sebagai Word?\n\nTips: pilih paket di saringan "Paket" untuk mengunduh satu paket saja.`)) return;
+  let soal = BS.soal.filter(s => s['Bagian'] === 'Evaluasi' && s['Aktif'] === 'Ya');
+  if (!soal.length) { alert('Belum ada soal evaluasi aktif untuk ' + BS.jabatan + '.'); return; }
+  const paket = '';
   if (!await siapPustaka('docx')) return;
   soal = soal.slice().sort((a, b) => (a['Jenis'] === 'Likert') - (b['Jenis'] === 'Likert') || (Number(a['Urutan']) || 0) - (Number(b['Urutan']) || 0));
   const { D, T, P, halaman } = wordAlat();
   const isi = [P([T('SOAL EVALUASI ' + BS.jabatan.toUpperCase(), { bold: true, size: 32, color: '1F4E78' })], { align: D.AlignmentType.CENTER, after: 40 }),
-    P(`${paket ? 'Paket: ' + paket : 'Semua soal'} · ${soal.length} soal`, { align: D.AlignmentType.CENTER, color: '4B5563', after: 240 })];
+    P(`Soal aktif · ${soal.length} soal`, { align: D.AlignmentType.CENTER, color: '4B5563', after: 240 })];
   soal.forEach((s, i) => {
     const catatan = s['Jenis'] === 'Checklist' ? ' (boleh pilih lebih dari satu)' : '';
     isi.push(new D.Paragraph({ keepNext: true, spacing: { before: 120, after: 40 }, children: [T(`${i + 1}. `, { bold: true }), T(s['Pertanyaan'] + catatan)] }));
@@ -1639,7 +1682,7 @@ $('bsUnduhWord').onclick = async () => {
     }) })) }));
   isi.push(P('“—” = soal skala Likert (pendapat), tidak memiliki kunci.', { size: 18, color: '4B5563', before: 160 }));
   const doc = new D.Document({ title: 'Soal ' + BS.jabatan, sections: [{ properties: halaman, children: isi }] });
-  simpanBlob(await D.Packer.toBlob(doc), ('Soal ' + BS.jabatan + (paket ? ' - ' + paket : '')).replace(/[\\/:*?"<>|]/g, '-') + '.docx');
+  simpanBlob(await D.Packer.toBlob(doc), ('Soal ' + BS.jabatan).replace(/[\\/:*?"<>|]/g, '-') + '.docx');
 };
 
 /* ---------- Mulai ---------- */
