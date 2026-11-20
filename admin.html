@@ -1222,7 +1222,7 @@ async function kirimUpload(cekSaja) {
 /* =================== UJI BEBAN DARI BROWSER (Langkah 7a) =================== */
 async function ubKirim(body, st) {
   // sama seperti halaman peserta: ulangi bila jaringan gagal / server sibuk
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 20; i++) {
     const t0 = performance.now();
     try {
       const r = await fetch(API_URL, { method: 'POST', body: JSON.stringify(body) });
@@ -1264,11 +1264,11 @@ $('ubMulai').onclick = async () => {
       if (!m || !m.ok || m.tahap !== 'soal') return;
       const jaw = {};
       m.soal.forEach(q => { if (!q.pilihan.length) return; const h = q.pilihan[Math.floor(Math.random() * q.pilihan.length)].h; jaw[q.id] = q.jenis === 'Checklist' ? [h] : h; });
-      const k = await ubKirim({ aksi: 'kirim', kode: s.kode, idPeserta: m.idPeserta, nip, jawaban: jaw }, ST[2]);
+      const k = await ubKirim({ aksi: 'kirim', kode: s.kode, idPeserta: m.idPeserta, baris: m.baris, nip, jawaban: jaw }, ST[2]);
       if (!k || !k.ok || !k.perluAnonim) return;
       const ja = {};
       k.soalAnonim.forEach(q => ja[q.id] = q.jenis === 'Ya/Tidak' ? 'Ya' : (q.pilihan && q.pilihan.length ? q.pilihan[0].t : 'Jawaban uji beban'));
-      await ubKirim({ aksi: 'kirimAnonim', kode: s.kode, idPeserta: m.idPeserta, nip, jawaban: ja }, ST[3]);
+      await ubKirim({ aksi: 'kirimAnonim', kode: s.kode, idPeserta: m.idPeserta, baris: m.baris, nip, jawaban: ja }, ST[3]);
     } finally { selesai++; }
   };
   await Promise.all(Array.from({ length: n }, (_, i) => satuPeserta(i)));

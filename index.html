@@ -230,7 +230,7 @@ $('btnMasuk').onclick = async () => {
   $('salahKode').textContent = '';
   if (!kode) { $('salahKode').textContent = 'Masukkan kode akses.'; return; }
   tirai('Memeriksa kode…');
-  const j = await api('cekKode', { kode }, { saatUlang: p => tirai(p) });
+  const j = await api('cekKode', { kode }, { maks: 20, saatUlang: () => tirai('Server sedang ramai, mohon tunggu… (otomatis mencoba lagi)') });
   tirai();
   if (!j.ok) { $('salahKode').textContent = j.pesan; return; }
   S = { kode, sesi: j.sesi, toko: j.toko }; simpan();
@@ -311,7 +311,7 @@ $('btnMulai').onclick = () => mulaiAtauLanjut();
 async function mulaiAtauLanjut() {
   $('btnMulai').disabled = true;
   tirai('Menyiapkan soal…');
-  const j = await api('mulai', { kode: S.kode, identitas: S.identitas }, { saatUlang: p => tirai(p || 'Menyiapkan soal…') });
+  const j = await api('mulai', { kode: S.kode, identitas: S.identitas }, { maks: 20, saatUlang: () => tirai('Server sedang ramai, mohon tunggu… (otomatis mencoba lagi). Waktu mengerjakan belum berjalan.') });
   tirai(); $('btnMulai').disabled = false;
   if (!j.ok) {
     if (j.selesai) { hapus(); tampil('L1'); $('salahKode').textContent = j.pesan; return; }
@@ -319,7 +319,7 @@ async function mulaiAtauLanjut() {
     return;
   }
   if (j.idPeserta !== S.idPeserta) { S.jawaban = {}; S.terkirim = false; S.anonim = {}; }
-  S.idPeserta = j.idPeserta;
+  S.idPeserta = j.idPeserta; S.baris = j.baris || 0;
   if (j.tahap === 'anonim') { S.terkirim = true; S.soalAnonim = j.soalAnonim; S.tahap = 'anonim'; simpan(); tampil('L6'); return; }
   S.tahap = 'soal'; S.soal = j.soal; S.jamMulai = j.jamMulai; S.durasi = j.durasi; S.jawaban = S.jawaban || {};
   simpan();
@@ -407,7 +407,7 @@ async function kirimJawaban(otomatis) {
   if (sedangKirim || S.terkirim) return;
   sedangKirim = true; clearInterval(jamTimer);
   tirai(otomatis ? 'Waktu habis. Mengirim jawaban…' : 'Mengirim jawaban…');
-  const j = await api('kirim', { kode: S.kode, idPeserta: S.idPeserta, nip: S.identitas.nip, jawaban: S.jawaban },
+  const j = await api('kirim', { kode: S.kode, idPeserta: S.idPeserta, baris: S.baris, nip: S.identitas.nip, jawaban: S.jawaban },
     { maks: -1, saatUlang: () => tirai('Belum terkirim, mencoba lagi… Jangan tutup halaman ini.') });
   tirai(); sedangKirim = false;
   if (!j.ok) {
@@ -479,7 +479,7 @@ $('btnKirimAnonim').onclick = async () => {
   $('salahAnonim').textContent = '';
   $('btnKirimAnonim').disabled = true;
   tirai('Mengirim…');
-  const j = await api('kirimAnonim', { kode: S.kode, idPeserta: S.idPeserta, nip: S.identitas.nip, jawaban: jaw },
+  const j = await api('kirimAnonim', { kode: S.kode, idPeserta: S.idPeserta, baris: S.baris, nip: S.identitas.nip, jawaban: jaw },
     { maks: -1, saatUlang: () => tirai('Belum terkirim, mencoba lagi… Jangan tutup halaman ini.') });
   tirai(); $('btnKirimAnonim').disabled = false;
   if (!j.ok) { $('salahAnonim').textContent = j.pesan; return; }
