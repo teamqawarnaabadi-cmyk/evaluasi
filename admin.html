@@ -262,6 +262,16 @@
       <div id="hasilPeriksa" style="margin-top:14px"></div>
     </div>
     <div class="kartu">
+      <h2>Uji beban (simulasi banyak peserta)</h2>
+      <p class="kecil">Mengirim peserta palsu <b>bersamaan</b> dari browser ini ke website: cek kode → mulai → kirim jawaban → kirim anonim, dengan pengulangan otomatis seperti halaman peserta asli. Memakai sesi khusus <b>UJIBEBAN</b> (batch "UJI BEBAN", Kasir). Biarkan tab ini terbuka sampai selesai. Setelahnya hapus datanya lewat kotak <b>Bersihkan data uji coba</b> di bawah.</p>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <div><label class="judul">Jumlah peserta bersamaan</label><input type="number" id="ubJumlah" value="50" min="1" max="500" style="width:140px"></div>
+        <button class="utama" id="ubMulai">Mulai uji beban</button>
+        <span class="kecil" id="ubWaktu"></span>
+      </div>
+      <div id="ubHasil" style="margin-top:12px"></div>
+    </div>
+    <div class="kartu">
       <h2>Bersihkan data uji coba</h2>
       <p class="kecil">Menghapus <b>seluruh</b> data satu batch: sesi, foto soal, peserta, jawaban, dan jawaban anonim. Gunakan untuk data uji coba atau data CONTOH sebelum batch resmi dimulai. <b>Tidak bisa dibatalkan.</b></p>
       <div class="grid2">
@@ -1207,6 +1217,69 @@ async function kirimUpload(cekSaja) {
         ${m.map(x => `<tr><td>${x.baris}</td><td>${esc(x.id || '(baru)')}</td><td style="white-space:normal">${esc(x.pesan)}</td></tr>`).join('')}</table></div>` : ''}</div>`;
   $('bsSimpanUp').disabled = !!m.length || !(j.baru || j.ubah || j.hilang);
 }
+
+
+/* =================== UJI BEBAN DARI BROWSER (Langkah 7a) =================== */
+async function ubKirim(body, st) {
+  // sama seperti halaman peserta: ulangi bila jaringan gagal / server sibuk
+  for (let i = 0; i < 10; i++) {
+    const t0 = performance.now();
+    try {
+      const r = await fetch(API_URL, { method: 'POST', body: JSON.stringify(body) });
+      const j = await r.json();
+      const dt = (performance.now() - t0) / 1000;
+      if (j.ok || !j.ulang) { st.waktu.push(dt); if (j.ok) st.ok++; else { st.tolak++; st.pesan = j.pesan; } return j; }
+    } catch (e) {}
+    st.ulang++;
+    await new Promise(r => setTimeout(r, Math.min(15000, 1000 * Math.pow(1.6, i)) + Math.random() * 1000));
+  }
+  st.gagal++; return null;
+}
+$('ubMulai').onclick = async () => {
+  const n = Math.max(1, Math.min(500, parseInt($('ubJumlah').value, 10) || 50));
+  if (!confirm(`Jalankan uji beban ${n} peserta bersamaan?\n\nData uji masuk ke batch "UJI BEBAN" (hapus setelahnya).`)) return;
+  const s = await api('adm_ujiBeban', {});
+  if (!s.ok) { alert(s.pesan); return; }
+  $('ubMulai').disabled = true;
+  const TAHAP = ['1. Cek kode akses', '2. Mulai mengerjakan', '3. Kirim jawaban', '4. Kirim bagian anonim'];
+  const ST = TAHAP.map(() => ({ ok: 0, tolak: 0, gagal: 0, ulang: 0, waktu: [], pesan: '' }));
+  const mulai = performance.now();
+  let selesai = 0;
+  const gambar = () => {
+    const det = x => x.toFixed(1);
+    $('ubWaktu').textContent = `${selesai}/${n} peserta selesai · ${det((performance.now() - mulai) / 1000)} detik`;
+    $('ubHasil').innerHTML = `<table><tr><th>Tahap</th><th>Berhasil</th><th>Ditolak</th><th>Gagal total</th><th>Diulang otomatis</th><th>Rata-rata tunggu</th><th>Terlama</th></tr>` +
+      ST.map((x, i) => { const w = x.waktu; return `<tr><td>${TAHAP[i]}</td><td><b>${x.ok}</b></td><td>${x.tolak ? x.tolak + ' (' + esc(x.pesan) + ')' : 0}</td>
+        <td style="color:${x.gagal ? 'var(--merah)' : ''}">${x.gagal}</td><td>${x.ulang}</td>
+        <td>${w.length ? det(w.reduce((a, b) => a + b, 0) / w.length) + ' dtk' : '–'}</td><td>${w.length ? det(Math.max(...w)) + ' dtk' : '–'}</td></tr>`; }).join('') + '</table>';
+  };
+  const jam = setInterval(gambar, 500);
+  const awalNip = 90000 + Math.floor(Math.random() * 9000);
+  const satuPeserta = async (i) => {
+    try {
+      const c = await ubKirim({ aksi: 'cekKode', kode: s.kode }, ST[0]); if (!c || !c.ok) return;
+      const tk = c.toko.length ? c.toko[i % c.toko.length].kode : '1';
+      const nip = String(awalNip + i).slice(-5);
+      const m = await ubKirim({ aksi: 'mulai', kode: s.kode, identitas: { nama: 'UJI BEBAN ' + (i + 1), nip, jabatan: 'Kasir', kodeToko: tk, status: 'Tetap' } }, ST[1]);
+      if (!m || !m.ok || m.tahap !== 'soal') return;
+      const jaw = {};
+      m.soal.forEach(q => { if (!q.pilihan.length) return; const h = q.pilihan[Math.floor(Math.random() * q.pilihan.length)].h; jaw[q.id] = q.jenis === 'Checklist' ? [h] : h; });
+      const k = await ubKirim({ aksi: 'kirim', kode: s.kode, idPeserta: m.idPeserta, nip, jawaban: jaw }, ST[2]);
+      if (!k || !k.ok || !k.perluAnonim) return;
+      const ja = {};
+      k.soalAnonim.forEach(q => ja[q.id] = q.jenis === 'Ya/Tidak' ? 'Ya' : (q.pilihan && q.pilihan.length ? q.pilihan[0].t : 'Jawaban uji beban'));
+      await ubKirim({ aksi: 'kirimAnonim', kode: s.kode, idPeserta: m.idPeserta, nip, jawaban: ja }, ST[3]);
+    } finally { selesai++; }
+  };
+  await Promise.all(Array.from({ length: n }, (_, i) => satuPeserta(i)));
+  clearInterval(jam); gambar();
+  const total = ((performance.now() - mulai) / 1000).toFixed(0);
+  const ringkas = `Uji beban ${n} peserta (browser), ${total} detik: ` + ST.map((x, i) => `${TAHAP[i]} ${x.ok}/${n} ok, gagal ${x.gagal}, diulang ${x.ulang}, rata2 ${x.waktu.length ? (x.waktu.reduce((a, b) => a + b, 0) / x.waktu.length).toFixed(1) : '-'} dtk`).join(' | ');
+  await api('adm_ujiBeban', { tutup: true, catatan: ringkas });
+  $('ubHasil').insertAdjacentHTML('beforeend', `<p class="kecil" style="margin-top:10px">Selesai dalam <b>${total} detik</b>. Sesi uji sudah ditutup. Hasil juga tercatat di sheet Catatan Error. Jangan lupa hapus batch <b>UJI BEBAN</b> di bawah.</p>`);
+  $('ubMulai').disabled = false;
+  await muatSesi(true); isiPilihanHapus();
+};
 
 /* ---------- Mulai ---------- */
 if (TOKEN) masukApp();
