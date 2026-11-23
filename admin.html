@@ -146,6 +146,23 @@
   .kotakTtd { width:220px; height:80px; border:1px dashed #9ca3af; border-radius:8px; display:flex; align-items:center; justify-content:center; background:#fff; overflow:hidden; }
   .kotakTtd img { max-width:100%; max-height:100%; }
   summary::-webkit-details-marker { display:none; }
+  #tayang { position:fixed; inset:0; z-index:1000; background:#0f1d2e; overflow:auto; }
+  .tv { color:#fff; padding:26px 34px; max-width:1500px; margin:0 auto; } .tvMuat { color:#fff; padding:40px; font-size:20px; }
+  .tvAtas { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; }
+  .tvJudul { font-size:28px; font-weight:800; } .tvSub { color:#9fb3cc; font-size:15px; }
+  .tvKotak { display:grid; gap:12px; margin:18px 0; } .tvArea { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px; margin-bottom:16px; }
+  .tvK { background:#16283f; border:1px solid #23395a; border-radius:12px; padding:14px 16px; }
+  .tvLb { white-space:nowrap; font-size:12px; letter-spacing:.08em; color:#9fb3cc; font-weight:600; text-transform:uppercase; } .tvN { font-size:46px; font-weight:800; line-height:1.15; }
+  .tvMini { display:grid; gap:4px; margin-top:8px; font-size:11px; text-align:center; white-space:nowrap; } .tvMini b { display:block; font-size:22px; }
+  .tvTutup { letter-spacing:4px; color:#6f86a3; }
+  .tvProg { height:12px; background:#23395a; border-radius:8px; overflow:hidden; } .tvProg div { height:100%; background:#5fd38d; }
+  .tvChip { display:inline-block; padding:6px 14px; border-radius:20px; border:1px solid #3a5577; background:transparent; color:#cfe0f5; font-size:14px; margin:0 6px 6px 0; width:auto; }
+  .tvChip.on { background:#2f6fb5; border-color:#2f6fb5; color:#fff; }
+  .tvTabel { width:100%; border-collapse:collapse; font-size:19px; } .tvTabel th { background:#16283f; color:#9fb3cc; font-size:13px; letter-spacing:.06em; text-transform:uppercase; text-align:left; padding:8px; }
+  .tvTabel td { border-top:1px solid #23395a; padding:10px 8px; color:#fff; }
+  .tvBawah { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-top:18px; }
+  .tvBt { font-size:15px; padding:9px 16px; border-radius:10px; border:1px solid #3a5577; background:#16283f; color:#fff; width:auto; } .tvBt.utamaTv { background:#2f6fb5; border-color:#2f6fb5; }
+  @media (max-width:800px) { .tvKotak { grid-template-columns:repeat(2,1fr) !important; } .tv { padding:16px; } }
 </style>
 </head>
 <body>
@@ -189,15 +206,17 @@
           <button role="tab" id="tabAktif" class="aktif" onclick="pilihTabSesi('aktif')">Sesi Aktif <span id="nAktif"></span></button>
           <button role="tab" id="tabArsip" onclick="pilihTabSesi('arsip')">Arsip <span id="nArsip"></span></button>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button id="btnTayang" class="utama" style="display:none;background:var(--hijau);border-color:var(--hijau)" onclick="klikTayang()">🖥 Tayangkan Layar Penuh</button>
           <input type="text" id="saringCari" placeholder="Cari batch / area / kode" style="width:220px">
           <button id="btnMuatUlang">↻ Muat Ulang</button>
         </div>
       </div>
       <div class="geser"><table id="tabelSesi" class="tabelSesi"></table></div>
-      <div class="kecil" style="margin-top:8px" id="ketSesi">Sesi yang sudah <b>Ditutup</b> otomatis pindah ke tab Arsip (bisa dibuka lagi dari sana). Proses = sedang mengerjakan · Tidak kirim = waktu habis tanpa kiriman.</div>
+      <div class="kecil" style="margin-top:8px" id="ketSesi">Sesi yang sudah <b>Ditutup</b> otomatis pindah ke tab Arsip (bisa dibuka lagi dari sana). Proses = sedang mengerjakan · Tidak kirim = waktu habis tanpa kiriman. <span id="diperbaruiSesi"></span></div>
     </div>
     <div id="panelSesi"></div>
+    <div id="pilihTayang" style="display:none;position:fixed;inset:0;background:rgba(15,29,46,.55);z-index:900;padding:0 14px"></div>
   </section>
 
   <!-- BUAT SESI -->
@@ -477,6 +496,7 @@ async function masukApp() {
   const j = await api('adm_awal');
   if (!j.ok) { if (!j.keluar) alert(j.pesan); return; }
   terapkanForm(j.form); DATA.sesi = j.ringkasan.sesi; gambarSesi();
+  $('diperbaruiSesi').textContent = '· Diperbarui ' + jamSekarang() + ' (otomatis setiap 30 detik)';
   carBeranda();
 }
 
@@ -503,6 +523,7 @@ async function muatSesi(latar) {
   const j = await api('adm_ringkasan', {}, { diam: latar });
   if (!j.ok) { if (!j.keluar) alert(j.pesan); return; }
   DATA.sesi = j.sesi; gambarSesi();
+  $('diperbaruiSesi').textContent = '· Diperbarui ' + jamSekarang() + ' (otomatis setiap 30 detik)';
 }
 $('btnMuatUlang').onclick = () => muatSesi(true);
 $('saringCari').oninput = gambarSesi;
@@ -533,6 +554,7 @@ function gambarSesi() {
         ${s.status !== 'Dibuka' ? `<button class="kecil utama" onclick="ubahStatus('${s.id}','Dibuka')">Buka</button>` : `<button class="kecil bahaya" onclick="ubahStatus('${s.id}','Ditutup')">Tutup</button>`}
         <button class="kecil" onclick="bukaPanel('${s.id}')">Kelola</button>
       </td></tr>`).join('') : `<tr><td colspan="6" class="kecil">${TAB_SESI === 'arsip' ? 'Belum ada sesi di arsip.' : 'Tidak ada sesi aktif. Buat lewat menu "Buat Sesi".'}</td></tr>`);
+  tombolTayang();
 }
 function salin(t, tombol) {
   navigator.clipboard && navigator.clipboard.writeText(t);
@@ -550,11 +572,10 @@ async function ubahStatus(id, status) {
 /* ---------- Panel kelola sesi ---------- */
 async function bukaPanel(id) {
   const s = DATA.sesi.find(x => x.id === id); if (!s) return;
-  const paketOpsi = '<option value="">Semua Soal Jabatan Ini</option>' + (DATA.form.paket || []).filter(x => x.jabatan === s.jabatan)
-    .map(x => `<option value="${esc(x.nama)}" ${x.nama === s.paket ? 'selected' : ''}>${esc(x.nama)}</option>`).join('');
   const p = $('panelSesi'); p.dataset.id = id;
   p.innerHTML = `<div class="kartu">
-    <div class="atas" style="margin:0"><h2 style="margin:0">Kelola ${esc(s.id)} · ${esc(s.jabatan)} · ${esc(s.area)}</h2><button class="kecil" onclick="tutupPanel()">✕ Tutup</button></div>
+    <div class="atas" style="margin:0"><h2 style="margin:0">Kelola ${esc(s.id)} · ${esc(s.jabatan)} · ${esc(s.area)}</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="kecil utama" onclick="bukaTayang(['${s.id}'])">🖥 Mode Tayang Sesi Ini</button><button class="kecil" onclick="tutupPanel()">✕ Tutup</button></div></div>
     <div class="grid2">
       <div><label class="judul">Batch</label><input type="text" id="eBatch" value="${esc(s.batch)}" list="dlBatch"></div>
       <div><label class="judul">Kode Akses</label><input type="text" id="eKode" value="${esc(s.kode)}"></div>
@@ -562,9 +583,8 @@ async function bukaPanel(id) {
       <div><label class="judul">Jam Tutup (WIB)</label><input type="time" id="eJam" value="${esc((s.jamTutup || '').slice(0, 5))}"></div>
       <div><label class="judul">Durasi (Menit)</label><input type="number" id="eDurasi" value="${esc(s.durasi)}"></div>
       <div><label class="judul">Kuota</label><input type="number" id="eKuota" value="${esc(s.kuota)}"></div>
-      <div><label class="judul">Paket Soal</label><select id="ePaket" ${s.soalTerkunci ? 'disabled' : ''}>${paketOpsi}</select>
-        ${s.soalTerkunci ? '<div class="kecil">Soal sudah terkunci karena sudah ada yang memulai.</div>' : ''}</div>
     </div>
+    ${s.soalTerkunci ? '<div class="kecil" style="margin-top:6px">Soal sesi ini sudah terkunci (sudah ada yang memulai).</div>' : ''}
     <div class="salah" id="salahEdit"></div><div class="berhasil" id="okEdit"></div>
     <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
       <button class="utama" onclick="simpanEdit('${s.id}')">Simpan Perubahan</button>
@@ -574,7 +594,7 @@ async function bukaPanel(id) {
     </div>
     <div class="kecil" style="margin-top:6px">"Perpanjang batas kirim" hanya untuk keadaan darurat (mis. server gangguan): peserta yang waktunya sudah habis tetap bisa mengirim jawaban yang tersimpan di HP-nya.
     "Ambil ulang soal" hanya bisa bila sesi belum punya peserta — berguna setelah memperbaiki Bank Soal saat uji coba.</div>
-    <h3>Peserta <button class="kecil" onclick="muatPeserta('${s.id}')">↻ Muat ulang</button></h3>
+    <h3>Peserta <button class="kecil" onclick="muatPeserta('${s.id}')">↻ Muat Ulang</button> <span class="kecil" id="diperbaruiPeserta" style="font-weight:400"></span></h3>
     <div class="geser" id="tabelPeserta"><div class="kecil">Memuat…</div></div>
   </div>`;
   p.scrollIntoView({ behavior: 'smooth' });
@@ -585,7 +605,6 @@ async function simpanEdit(id) {
   const s = DATA.sesi.find(x => x.id === id);
   const ubah = { batch: $('eBatch').value.trim(), kode: $('eKode').value.trim(), tanggal: $('eTanggal').value, jamTutup: $('eJam').value,
                  durasi: $('eDurasi').value, kuota: $('eKuota').value };
-  if (!s.soalTerkunci) ubah.paket = $('ePaket').value;
   $('salahEdit').textContent = ''; $('okEdit').textContent = '';
   if (!ubah.batch) { $('salahEdit').textContent = 'Batch wajib diisi.'; return; }
   $('okEdit').textContent = 'Menyimpan…';
@@ -612,6 +631,7 @@ async function resetSoal(id) {
 async function muatPeserta(id, latar) {
   const j = await api('adm_pesertaSesi', { id }, { diam: latar !== false });
   if (!j.ok) { $('tabelPeserta').innerHTML = `<div class="salah">${esc(j.pesan)}</div>`; return; }
+  if ($('diperbaruiPeserta')) $('diperbaruiPeserta').textContent = 'Diperbarui ' + jamSekarang() + ' · otomatis setiap 30 detik';
   const kelas = st => st.startsWith('Sedang') ? 'Sedang' : st.startsWith('Mulai') ? 'Tidak' : st.startsWith('Menunggu') ? 'Menunggu' : st;
   const label = st => st === 'Sedang mengerjakan' ? 'Proses' : st;
   $('tabelPeserta').innerHTML = j.peserta.length ? `<table><tr><th>Nama</th><th>NIP</th><th>Jabatan</th><th>Toko</th><th>Status</th><th>Nilai</th><th>Anonim</th><th></th></tr>` +
@@ -2201,8 +2221,109 @@ async function carBeranda() {
     <button class="kecil" onclick="bukaHalaman('hCar')">Buka CAR</button></div>` : '';
 }
 
+
+/* =================== Pembaruan otomatis & Mode Tayang =================== */
+const JEDA_OTOMATIS = 30000;
+let SIBUK_OTOMATIS = false;
+function jamSekarang() { return new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\./g, ':'); }
+function waktuSesi(tgl, jam) { if (!tgl || !jam) return null; const d = new Date(tgl + 'T' + String(jam).slice(0, 5) + ':00+07:00'); return isNaN(d) ? null : d.getTime(); }
+// Sesi berjalan: terbuka (Dibuka / terbuka otomatis), jam mulai sudah tiba, belum lewat jam tutup
+function sesiBerjalan(s) {
+  if (s.status === 'Ditutup' || s.pintu) return false;
+  if (!(s.status === 'Dibuka' || (s.status === 'Draf' && s.bukaOtomatis))) return false;
+  const now = Date.now(), mulai = waktuSesi(s.tanggal, s.jamMulai), tutup = waktuSesi(s.tanggal, s.jamTutup);
+  if (mulai && now < mulai) return false;
+  if (!mulai && s.tanggal && s.tanggal !== new Date(now + 7 * 3600000).toISOString().slice(0, 10)) return false;
+  if (tutup && now > tutup) return false;
+  return true;
+}
+function grupBerjalan() {
+  const g = {};
+  (DATA.sesi || []).filter(sesiBerjalan).forEach(s => { const k = [s.jabatan, s.batch, s.tanggal, s.jamMulai].join('|'); (g[k] = g[k] || []).push(s); });
+  return Object.values(g);
+}
+function tombolTayang() {
+  const b = $('btnTayang'); if (!b) return;
+  const g = grupBerjalan(), n = g.reduce((a, x) => a + x.length, 0);
+  b.style.display = n ? '' : 'none';
+  b.textContent = `🖥 Tayangkan Layar Penuh (${n} Sesi Berjalan)`;
+}
+function klikTayang() {
+  const g = grupBerjalan();
+  if (!g.length) return;
+  if (g.length === 1) { bukaTayang(g[0].map(s => s.id)); return; }
+  const d = $('pilihTayang');
+  d.innerHTML = `<div class="kartu" style="max-width:520px;margin:10vh auto"><h3 style="margin:0 0 6px">Pilih Jadwal Yang Ditayangkan</h3>
+    ${g.map((x, i) => `<button style="display:block;width:100%;text-align:left;margin-top:8px" onclick="$('pilihTayang').style.display='none';bukaTayang(${esc(JSON.stringify(x.map(s => s.id)))})">
+      <b>${esc(x[0].jabatan)} · ${esc(x[0].batch)}</b><div class="kecil">${esc(tglIndo(x[0].tanggal))} · ${esc(String(x[0].jamMulai || '').slice(0, 5))}–${esc(String(x[0].jamTutup || '').slice(0, 5))} WIB · ${x.length} sesi</div></button>`).join('')}
+    <div style="text-align:right;margin-top:12px"><button onclick="$('pilihTayang').style.display='none'">Batal</button></div></div>`;
+  d.style.display = 'block';
+}
+let TAYANG = null;   // { ids, data, area, hasil }
+async function bukaTayang(ids) {
+  TAYANG = { ids, data: null, area: '', hasil: false };
+  const el = $('tayang'); el.style.display = 'block'; el.innerHTML = '<div class="tvMuat">Memuat…</div>';
+  document.body.style.overflow = 'hidden';
+  try { if (el.requestFullscreen && !document.fullscreenElement) await el.requestFullscreen(); } catch (e) {}
+  muatTayang();
+}
+function tutupTayang() {
+  TAYANG = null; $('tayang').style.display = 'none'; $('tayang').innerHTML = ''; document.body.style.overflow = '';
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+}
+async function muatTayang() {
+  if (!TAYANG) return;
+  const j = await api('adm_tayang', { ids: TAYANG.ids }, { diam: true });
+  if (!TAYANG) return;
+  if (!j.ok) { if (!TAYANG.data) $('tayang').innerHTML = `<div class="tvMuat">${esc(j.pesan)} <button class="tvBt" onclick="tutupTayang()">Tutup</button></div>`; return; }
+  TAYANG.data = j; gambarTayang();
+}
+function gambarTayang() {
+  const j = TAYANG.data, A = j.area, h = TAYANG.hasil, an = j.adaAnonim;
+  const tot = A.reduce((t, a) => { ['masuk', 'proses', 'selesai', 'tidakKirim', 'anonim', 'lulus', 'tidak'].forEach(k => t[k] += a[k]); t.nilai += (a.rata || 0) * a.selesai; return t; },
+    { masuk: 0, proses: 0, selesai: 0, tidakKirim: 0, anonim: 0, lulus: 0, tidak: 0, nilai: 0 });
+  const rata = tot.selesai ? fmt(tot.nilai / tot.selesai, 1) : '—';
+  const ttp = '<span class="tvTutup">••</span>';
+  const kotak = [['Masuk', tot.masuk, '#fff'], ['Mengerjakan', tot.proses, '#8ec5ff'], ['Selesai', tot.selesai, '#5fd38d'], ['Tidak Kirim', tot.tidakKirim, '#ff8a80']]
+    .concat(an ? [['Isi Anonim', tot.anonim, '#d7b8ff', `dari ${tot.selesai} selesai`]] : [])
+    .concat([['Rata-Rata · Lulus', h ? `${rata} · ${tot.lulus}` : `${ttp} · ${ttp}`, '#ffd479', h ? `${tot.tidak} tidak lulus` : '']]);
+  const P = TAYANG.area ? j.peserta.filter(p => p.area === TAYANG.area) : j.peserta;
+  const st = { proses: '<span style="color:#8ec5ff">⏳ Mengerjakan</span>', selesai: '<span style="color:#5fd38d">✔ Selesai</span>', tidakKirim: '<span style="color:#ff8a80">✕ Tidak Kirim</span>' };
+  $('tayang').innerHTML = `<div class="tv">
+    <div class="tvAtas"><div><div class="tvJudul">${esc(j.jabatan)} · ${esc(j.batch)}</div>
+      <div class="tvSub">${[tglIndo(j.tanggal), j.jamMulai ? String(j.jamMulai).slice(0, 5) + (j.jamTutup ? '–' + String(j.jamTutup).slice(0, 5) : '') + ' WIB' : '', A.length + ' Area'].filter(Boolean).map(esc).join(' · ')}</div></div>
+      <div class="tvSub" style="text-align:right">● Diperbarui ${esc(j.waktu)}<br>Otomatis Setiap 30 Detik</div></div>
+    <div class="tvKotak" style="grid-template-columns:repeat(${kotak.length},1fr)">${kotak.map(k => `<div class="tvK" style="text-align:center"><div class="tvLb">${k[0]}</div><div class="tvN" style="color:${k[2]}${k[0].startsWith('Rata') ? ';font-size:34px;white-space:nowrap;line-height:1.6' : ''}">${k[1]}</div>${k[3] ? `<div class="tvSub" style="font-size:12px">${k[3]}</div>` : ''}</div>`).join('')}</div>
+    <div class="tvArea">${A.map(a => `<div class="tvK"><div style="display:flex;justify-content:space-between;gap:8px"><b style="font-size:18px">${esc(a.area)}</b><span class="tvSub" style="font-family:monospace">${esc(a.kode)}</span></div>
+      <div class="tvMini" style="grid-template-columns:repeat(${an ? 5 : 4},1fr)"><div>Masuk<b>${a.masuk}</b></div><div style="color:#8ec5ff">Proses<b>${a.proses}</b></div><div style="color:#5fd38d">Selesai<b>${a.selesai}</b></div><div style="color:#ff8a80">Tdk Kirim<b>${a.tidakKirim}</b></div>${an ? `<div style="color:#d7b8ff">Anonim<b>${a.anonim}</b></div>` : ''}</div>
+      <div class="tvSub" style="margin-top:8px">Rata-Rata ${h ? `<b style="color:#fff;font-size:18px">${a.rata == null ? '—' : fmt(a.rata, 1)}</b>` : ttp} · Lulus ${h ? `<b style="color:#5fd38d">${a.lulus}</b>` : ttp} · Tidak ${h ? `<b style="color:#ff8a80">${a.tidak}</b>` : ttp}</div></div>`).join('')}</div>
+    <div class="tvProg"><div style="width:${tot.masuk ? Math.round(tot.selesai / tot.masuk * 100) : 0}%"></div></div>
+    <div class="tvSub" style="margin:6px 0 14px">${tot.selesai} Dari ${tot.masuk} Peserta Sudah Selesai${an ? ` · ${tot.anonim} Sudah Mengisi Bagian Anonim` : ''}</div>
+    ${A.length > 1 ? `<div style="margin-bottom:12px">${[['', 'Semua Area', tot.masuk]].concat(A.map(a => [a.area, a.area, a.masuk])).map(x => `<button class="tvChip ${TAYANG.area === x[0] ? 'on' : ''}" onclick="TAYANG.area='${esc(x[0])}';gambarTayang()">${esc(x[1])} (${x[2]})</button>`).join('')}</div>` : ''}
+    <table class="tvTabel"><tr><th>Nama</th><th>Area</th><th>Toko</th><th>Status</th>${an ? '<th>Anonim</th>' : ''}</tr>
+      ${P.map(p => `<tr><td>${esc(p.nama)}</td><td>${esc(p.area)}</td><td>${esc(p.toko)}</td><td>${st[p.status]}</td>${an ? `<td>${p.anonim === 'Sudah' ? '<span style="color:#d7b8ff">✔ Sudah</span>' : p.anonim === 'Belum' ? '<span style="color:#9fb3cc">⏳ Belum</span>' : '<span style="color:#6f86a3">—</span>'}</td>` : ''}</tr>`).join('') || `<tr><td colspan="5" style="color:#9fb3cc">Belum ada peserta.</td></tr>`}</table>
+    <div class="tvBawah"><span class="tvSub" style="font-size:13px">Nilai per peserta tidak ditampilkan di Mode Tayang.</span>
+      <div style="display:flex;gap:8px"><button class="tvBt ${h ? '' : 'utamaTv'}" onclick="TAYANG.hasil=!TAYANG.hasil;gambarTayang()">${h ? '🙈 Tutup Hasil' : '👁 Tampilkan Hasil'}</button>
+      <button class="tvBt" onclick="document.fullscreenElement ? document.exitFullscreen() : $('tayang').requestFullscreen && $('tayang').requestFullscreen()">⛶ Layar Penuh</button>
+      <button class="tvBt" onclick="tutupTayang()">✕ Keluar</button></div></div></div>`;
+}
+// Pembaruan otomatis tiap 30 detik (berhenti saat tab tidak dilihat; tidak menumpuk)
+setInterval(async () => {
+  if (!TOKEN || document.visibilityState !== 'visible' || SIBUK_OTOMATIS) return;
+  SIBUK_OTOMATIS = true;
+  try {
+    if (TAYANG) { await muatTayang(); return; }
+    if (!$('hBeranda').classList.contains('aktif') || adminUtama() === false) return;
+    await muatSesi(true);
+    const idP = $('panelSesi').dataset.id; if (idP) await muatPeserta(idP, true);
+  } finally { SIBUK_OTOMATIS = false; }
+}, JEDA_OTOMATIS);
+setInterval(tombolTayang, 20000);   // jam mulai bisa tiba tanpa data berubah
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && TAYANG && !document.fullscreenElement) tutupTayang(); });
+
 $('carStatus').onchange = gambarCarHal; $('carJab').onchange = gambarCarHal;
 if (TOKEN) masukApp();
 </script>
+<div id="tayang" style="display:none"></div>
 </body>
 </html>
