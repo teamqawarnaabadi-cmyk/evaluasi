@@ -748,6 +748,10 @@ $('btnSimpanSesi').onclick = async () => {
   const kode = b.map(x => (BKODE[x.kunci] || '').trim().toUpperCase());
   if (kode.some(k => !k)) { $('salahBuat').textContent = 'Ada kode akses yang kosong.'; return; }
   if (new Set(kode).size !== kode.length) { $('salahBuat').textContent = 'Ada kode akses yang sama. Setiap sesi harus punya kode sendiri.'; return; }
+  // Jam tutup harus setelah jam mulai + durasi, kalau tidak sesi langsung dianggap selesai (masuk Arsip)
+  const mM = keMenit($('bMulai').value), mT = keMenit($('bJam').value), dur = Number($('bDurasi').value) || 45;
+  if (mM != null && mT != null && mT < mM + dur) {
+    $('salahBuat').textContent = `Jam tutup (${$('bJam').value}) terlalu cepat. Harus paling cepat ${keJam(mM + dur)} (jam mulai ${$('bMulai').value} + durasi ${dur} menit).`; return; }
   const umum = { batch, jabatan: $('bJabatan').value, tanggal: $('bTanggal').value, jamMulai: $('bMulai').value, jamTutup: $('bJam').value,
                  durasi: $('bDurasi').value, kuota: $('bKuota').value, status: 'Draf' };
   const sesi = b.map((x, i) => Object.assign({}, umum, { area: x.area, kode: kode[i] }));
@@ -758,6 +762,7 @@ $('btnSimpanSesi').onclick = async () => {
     <div class="kecil" style="margin-top:6px">${umum.jamMulai && umum.tanggal ? 'Sesi terbuka otomatis 30 menit sebelum jam mulai.' : 'Buka sesi lewat Beranda & Sesi saat waktunya tiba.'}</div></div>`;
   $('bArea').querySelectorAll('input').forEach(x => x.checked = false);
   Object.keys(BKODE).forEach(k => delete BKODE[k]);
+  JAM_MANUAL = false; aturJamTutup(); ketJadwal();   // jam tutup manual tidak terbawa ke sesi berikutnya
   const j2 = await api('adm_awal', {}, { diam: true });
   if (j2.ok) { terapkanForm(j2.form); DATA.sesi = j2.ringkasan.sesi; gambarSesi(); } else labelArea();
 };
