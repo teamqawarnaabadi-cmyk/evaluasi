@@ -2029,7 +2029,7 @@ function gambarDetailCar() {
       <label class="f">Tindakan Efektif?<select id="c3Efektif"><option>Ya</option><option>Tidak</option></select></label>
       <label class="f">Hasil<select id="c3Hasil"><option value="Selesai">CAR Selesai</option><option value="Diperpanjang">CAR Diperpanjang (Terbit CAR Baru)</option></select></label>
       <label class="f full">Penjelasan<textarea id="c3Penjelasan" rows="2"></textarea></label>
-      <label class="f">Nama Verifikator${roTeks(CARD.nama)}</label>
+      <label class="f">Nama Verifikator<input type="text" id="c3Nama" value="${esc(CARD.nama)}" placeholder="Nama lengkap verifikator"></label>
       <label class="f">Tanggal<input type="date" id="c3Tanggal" value="${esc(CARD.hariIni)}"></label>
       <div class="full" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
         <div class="kotakTtd">${TTD_SAYA ? `<img src="data:image/png;base64,${TTD_SAYA}" alt="Tanda tangan">` : '<span class="kecil">Belum ada tanda tangan</span>'}</div>
@@ -2102,7 +2102,8 @@ async function simpanCar3() {
   $('c3Salah').textContent = '';
   const hasil = $('c3Hasil').value;
   if (!confirm(hasil === 'Diperpanjang' ? 'Simpan verifikasi dan PERPANJANG CAR ini? CAR baru akan diterbitkan.' : 'Simpan verifikasi dan tandai CAR ini SELESAI?')) return;
-  const j = await api('adm_carSimpan3', { no: CARD.car.no, efektif: $('c3Efektif').value, hasil, penjelasan: $('c3Penjelasan').value, tanggal: $('c3Tanggal').value });
+  if (!$('c3Nama').value.trim()) { $('c3Salah').textContent = 'Isi nama verifikator.'; return; }
+  const j = await api('adm_carSimpan3', { no: CARD.car.no, efektif: $('c3Efektif').value, hasil, penjelasan: $('c3Penjelasan').value, tanggal: $('c3Tanggal').value, verifikator: $('c3Nama').value.trim() });
   if (!j.ok) { $('c3Salah').textContent = j.pesan; return; }
   if (j.baru) alert('CAR diperpanjang. CAR baru: ' + j.baru);
   bukaCar(CARD.car.no, CARD.wadah);
