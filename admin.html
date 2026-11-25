@@ -200,6 +200,7 @@
   <!-- BERANDA -->
   <section class="halaman aktif" id="hBeranda">
     <div id="carBeranda"></div>
+    <div id="carPengingat"></div>
     <div class="kartu">
       <div class="atas" style="margin:0 0 12px">
         <div class="tabSesi" role="tablist">
@@ -1879,7 +1880,7 @@ function gambarDaftarCar(wadah, d, opsi) {
           <td style="white-space:nowrap">${tglPendek(c.terbit)}</td><td style="white-space:nowrap">${tglPendek(c.batas)}${c.sisa != null && c.status === 'Menunggu Tindakan' ? `<div class="kecil">Sisa ${c.sisa} Hari Kerja</div>` : ''}</td>
           <td>${lencanaCar(c, CARS.hariIni)}</td><td style="text-align:right;white-space:nowrap"><button class="kecil" onclick="bukaCar('${esc(c.no)}','${wadah}')">Buka</button>${adminUtama() ? ` <button class="kecil bahaya" title="Hapus CAR" aria-label="Hapus CAR ${esc(c.no)}" onclick="hapusCar('${esc(c.no)}','${wadah}')">Hapus</button>` : ''}</td></tr>`).join('')}</table></div>`
         : `<div class="kecil" style="padding:8px 0">${opsi.kosong}</div>`}
-      <div class="kecil" style="margin-top:10px">CAR terbit otomatis untuk setiap Area Manager yang punya peserta tidak lulus, setelah sesi terakhir di areanya ditutup. Batas penyelesaian = 14 hari kerja (Senin–Jumat, tanpa libur nasional di sheet "Hari Libur"). Bila sampai batas belum ada tindakan & bukti, CAR otomatis diperpanjang.</div></div>`;
+      <div class="kecil" style="margin-top:10px">CAR dibuat oleh admin per Area Manager dan area (Laporan → tab CAR → + Buat CAR). Satu area hanya masuk satu CAR per batch. Batas penyelesaian = 14 hari kerja (Senin–Jumat, tanpa libur nasional di sheet "Hari Libur"). Bila sampai batas belum ada tindakan & bukti, CAR otomatis diperpanjang.</div></div>`;
 }
 async function muatCarLap() {
   if (!LAP) return;
@@ -1891,15 +1892,64 @@ async function muatCarLap() {
 }
 function gambarCarLap() {
   gambarDaftarCar('tCar', CARS.lap, { judul: `Daftar CAR – ${esc(LAP.jabatan)} · ${esc(LAP.batch)}`,
-    kosong: 'Belum ada CAR untuk batch ini. CAR muncul otomatis setelah sesi di area Area Manager tersebut ditutup dan ada peserta yang tidak lulus.' + (adminUtama() ? ' Untuk batch lama (sebelum fitur CAR aktif), tekan "Buat CAR Untuk Batch Ini".' : ''),
-    tombolBuat: adminUtama() ? '<button class="kecil" onclick="buatCarBatch()">Buat CAR Untuk Batch Ini</button>' : '' });
+    kosong: 'Belum ada CAR untuk batch ini.' + (adminUtama() ? ' Tekan "+ Buat CAR", pilih Area Manager dan area yang sesinya sudah selesai.' : ''),
+    tombolBuat: adminUtama() ? '<button class="kecil utama" onclick="bukaDialogCar()">+ Buat CAR</button>' : '' });
 }
-async function buatCarBatch() {
-  if (!confirm(`Buat CAR untuk ${LAP.jabatan} · ${LAP.batch}?\n\nSatu CAR per Area Manager yang punya peserta tidak lulus (hanya area yang semua sesinya sudah ditutup). Batch lama memakai tanggal terbit hari ini.`)) return;
-  const j = await api('adm_carBuat', { jabatan: LAP.jabatan, batch: LAP.batch });
+/* Buat CAR manual: pilih Area Manager + area */
+let CALON = null;
+async function bukaDialogCar() {
+  const j = await api('adm_carCalon', { jabatan: LAP.jabatan, batch: LAP.batch });
   if (!j.ok) { alert(j.pesan); return; }
-  alert(j.baru ? j.baru + ' CAR baru diterbitkan.' : 'Tidak ada CAR baru (semua Area Manager sudah punya CAR, tidak ada peserta tidak lulus, atau sesinya belum ditutup).');
-  muatCarLap();
+  CALON = j.calon;
+  const bisa = m => m.area.filter(a => a.siap && a.gagal && !a.car).length;
+  const ket = m => { const g = m.area.reduce((t, a) => t + a.gagal, 0), b = bisa(m);
+    return `${m.area.length} area · ${g} tidak lulus · ${b ? b + ' area siap dibuatkan CAR' : (m.area.every(a => !a.gagal || a.car) ? 'semua sudah ber-CAR / lulus' : 'menunggu sesi selesai')}`; };
+  const urut = CALON.slice().sort((a, b) => (bisa(b) > 0) - (bisa(a) > 0) || a.am.localeCompare(b.am));
+  const d = $('dlgCar');
+  d.innerHTML = `<div class="kartu" style="max-width:640px;margin:8vh auto;max-height:84vh;overflow:auto">
+    <h3 style="margin:0 0 4px">Buat CAR – ${esc(LAP.jabatan)} · ${esc(LAP.batch)}</h3>
+    <div class="kecil" style="margin-bottom:12px">Pilih Area Manager, lalu centang area yang dibuatkan CAR. Hanya area yang semua sesinya sudah selesai dan punya peserta tidak lulus yang bisa dipilih.</div>
+    ${urut.length ? `<label class="judul" for="dcAm" style="margin-top:0">Area Manager</label><select id="dcAm">${urut.map(m => `<option value="${esc(m.am)}">${esc(m.am)} (${esc(ket(m))})</option>`).join('')}</select>
+    <div class="judul" style="margin-top:14px">Area</div><div id="dcArea"></div><div id="dcInfo"></div>
+    <div class="salah" id="dcSalah"></div>` : '<div class="kecil">Belum ada peserta selesai di batch ini.</div>'}
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px"><button onclick="$('dlgCar').style.display='none'">Batal</button>${urut.length ? '<button class="utama" id="dcBuat" onclick="simpanCarBaru()">Buat CAR</button>' : ''}</div></div>`;
+  d.style.display = 'block';
+  if (urut.length) { $('dcAm').onchange = gambarAreaCar; gambarAreaCar(); }
+}
+function gambarAreaCar() {
+  const m = CALON.find(x => x.am === $('dcAm').value);
+  $('dcArea').innerHTML = m.area.map(a => { const ok = a.siap && a.gagal && !a.car;
+    const lbl = a.car ? `<span class="lencana l-Sedang">Sudah CAR</span>` : !a.siap ? '<span class="lencana l-Draf">Belum Selesai</span>' : !a.gagal ? '<span class="lencana l-Selesai">Semua Lulus</span>' : '<span class="lencana l-Selesai">Siap</span>';
+    const sub = a.car ? `Sudah masuk CAR ${esc(a.car)}` : !a.siap ? 'Masih ada sesi area ini yang belum selesai' : `Sesi selesai ${esc(tglPendek(a.selesai))} · ${a.peserta} peserta · ${a.gagal ? `<b style="color:var(--merah)">${a.gagal} tidak lulus</b>` : 'semua lulus'}`;
+    return `<label style="display:flex;gap:10px;align-items:center;padding:9px 6px;border-top:1px solid #eef0f3;width:auto;${ok ? '' : 'color:#9ca3af'}"><input type="checkbox" value="${esc(a.area)}" ${ok ? 'checked' : 'disabled'} onchange="infoCarBaru()">
+      <span style="flex:1"><b>${esc(a.area)}</b><div class="kecil">${sub}</div></span>${lbl}</label>`; }).join('');
+  infoCarBaru();
+}
+function infoCarBaru() {
+  const m = CALON.find(x => x.am === $('dcAm').value);
+  const pilih = [...$('dcArea').querySelectorAll('input:checked')].map(x => x.value);
+  const n = m.area.filter(a => pilih.includes(a.area)).reduce((t, a) => t + a.gagal, 0);
+  const sisa = m.area.filter(a => !a.siap && !a.car).map(a => a.area);
+  $('dcInfo').innerHTML = pilih.length ? `<div class="peringatan" style="margin:12px 0 0">CAR berisi <b>${n} peserta tidak lulus</b> dari <b>${pilih.map(esc).join(', ')}</b>.${sisa.length ? ` Area ${sisa.map(esc).join(', ')} bisa dibuatkan CAR tersendiri setelah sesinya selesai.` : ''}</div>` : '';
+  $('dcBuat').disabled = !pilih.length;
+}
+async function simpanCarBaru() {
+  const areas = [...$('dcArea').querySelectorAll('input:checked')].map(x => x.value);
+  const j = await api('adm_carBuat', { jabatan: LAP.jabatan, batch: LAP.batch, am: $('dcAm').value, areas });
+  if (!j.ok) { $('dcSalah').textContent = j.pesan; return; }
+  $('dlgCar').style.display = 'none';
+  await muatCarLap();
+  bukaCar(j.no, 'tCar');
+}
+// Dari pita Beranda: buka Laporan jabatan+batch itu → tab CAR → jendela Buat CAR
+async function bukaBuatCarDari(jab, batch) {
+  bukaHalaman('hLaporan');
+  for (let i = 0; i < 40 && !LAPF; i++) await new Promise(r => setTimeout(r, 250));
+  if (!LAPF) return;
+  $('lJabatan').value = jab; isiBatchLap(); $('lBatch').value = batch;
+  await $('btnTampil').onclick();
+  document.querySelector('#subLap button[data-t=tCar]').click();
+  bukaDialogCar();
 }
 /* Halaman CAR (menu) */
 async function muatCarHal(latar) {
@@ -2065,7 +2115,7 @@ async function hapusCar(no, wadah) {
   const c = semua.find(c => c.no === no) || (CARD && CARD.car) || {};
   if (!confirm(`Hapus CAR ${no}?` + (rantai.length ? `\n\nPerpanjangannya ikut terhapus: ${rantai.join(', ')}.` : '') +
     `\n\nIsi Bagian 1–3 dan file bukti ikut dihapus. Tindakan ini tidak bisa dibatalkan.` +
-    (c.dari ? '' : `\n\nCAR ini tidak akan dibuat ulang otomatis. Bila perlu, buat lagi lewat Laporan → tab CAR → "Buat CAR Untuk Batch Ini".`))) return;
+    (c.dari ? '' : `\n\nArea di CAR ini bisa dibuatkan CAR lagi lewat Laporan → tab CAR → "+ Buat CAR".`))) return;
   const j = await api('adm_carHapus', { no });
   if (!j.ok) { alert(j.pesan); return; }
   alert('Terhapus: ' + j.terhapus.join(', '));
@@ -2224,6 +2274,10 @@ async function carBeranda() {
   $('carBeranda').innerHTML = siap || tunggu ? `<div class="peringatan" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
     <span>📋 CAR: <b>${siap}</b> siap diverifikasi · <b>${tunggu}</b> menunggu tindakan Pemantau${batas ? ` · <b style="color:var(--merah)">${batas} batas hari ini</b>` : ''}${dua ? ` · <b style="color:var(--merah)">${dua} sudah diperpanjang 2 kali</b>` : ''}</span>
     <button class="kecil" onclick="bukaHalaman('hCar')">Buka CAR</button></div>` : '';
+  const p = await api('adm_carPengingat', {}, { diam: true });
+  $('carPengingat').innerHTML = p.ok ? p.belum.map(b => `<div class="peringatan" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:#fdecea;border-color:#f3b4ad;color:#7a1f16">
+    <span>⚠ <b>Belum Dibuatkan CAR:</b> ${esc(b.jabatan)} · ${esc(b.batch)} – ${b.am} Area Manager (${b.area} area) punya peserta tidak lulus dan sesinya sudah selesai.</span>
+    <button class="kecil utama" onclick="bukaBuatCarDari(${esc(JSON.stringify(b.jabatan))}, ${esc(JSON.stringify(b.batch))})">Buat CAR</button></div>`).join('') : '';
 }
 
 
@@ -2330,5 +2384,6 @@ $('carStatus').onchange = gambarCarHal; $('carJab').onchange = gambarCarHal;
 if (TOKEN) masukApp();
 </script>
 <div id="tayang" style="display:none"></div>
+<div id="dlgCar" style="display:none;position:fixed;inset:0;background:rgba(15,29,46,.55);z-index:900;padding:0 14px"></div>
 </body>
 </html>
