@@ -776,9 +776,19 @@ $('btnPeriksa').onclick = async () => {
   if (!m.length) { $('hasilPeriksa').innerHTML = '<div class="berhasil" style="font-size:16px">✓ Semua data aman. Tidak ditemukan masalah.</div>'; return; }
   const perlu = m.filter(x => x.berat !== 'Saran').length, saran = m.length - perlu;
   $('hasilPeriksa').innerHTML = `<p><b>${perlu}</b> hal perlu diperbaiki · <b>${saran}</b> saran</p>
-    <div class="geser"><table><tr><th>Sheet</th><th>Baris</th><th>Keterangan</th><th>Tingkat</th></tr>${m.map(x => `<tr><td>${esc(x.sheet)}</td><td>${x.baris}</td><td>${esc(x.pesan)}</td>
+    <div class="geser"><table><tr><th>Sheet</th><th>Baris</th><th>Keterangan</th><th>Tingkat</th></tr>${m.map(x => `<tr><td>${esc(x.sheet)}</td><td>${x.baris}</td><td>${esc(x.pesan)}${x.aksi && x.aksi.jenis === 'hitungUlang' ? `<div style="margin-top:6px"><button class="kecil utama" onclick="hitungUlangNilai(${esc(JSON.stringify(x.aksi.jabatan))}, ${esc(JSON.stringify(x.aksi.batch))}, ${x.aksi.n})">↻ Hitung Ulang Nilai Batch Ini</button></div>` : ''}</td>
     <td><span class="lencana ${x.berat === 'Saran' ? 'l-Menunggu' : 'l-Tidak'}">${esc(x.berat)}</span></td></tr>`).join('')}</table></div>`;
 };
+
+async function hitungUlangNilai(jab, batch, n) {
+  if (!confirm(`Hitung ulang nilai ${jab} · ${batch}?\n\nSemua peserta (Sumber Website) dinilai ulang memakai kunci jawaban yang ada di foto soal batch ini saat ini. ${n} peserta yang nilainya tidak cocok akan berubah, status Lulus/Tidak Lulus bisa ikut berubah.\n\nCAR yang sudah dibuat tidak ikut berubah.`)) return;
+  const j = await api('adm_hitungUlang', { jabatan: jab, batch });
+  if (!j.ok) { alert(j.pesan); return; }
+  alert(`Selesai. ${j.peserta} peserta dihitung ulang · ${j.berubah} status lulus berubah (jadi lulus ${j.jadiLulus}, jadi tidak lulus ${j.jadiTidak}).` +
+    (j.dilewati.length ? `\n${j.dilewati.length} peserta dilewati karena jawabannya tidak lengkap.` : '') + (j.berubah ? '\n\nPeriksa CAR batch ini bila ada.' : ''));
+  LAP = null;
+  $('btnPeriksa').click();
+}
 
 /* =================== LAPORAN (Langkah 4) =================== */
 let LAPF = null;   // pilihan filter (batch, toko) dari server
